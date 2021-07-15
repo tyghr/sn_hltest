@@ -1,1 +1,1 @@
-web: social_network
+web: cmd

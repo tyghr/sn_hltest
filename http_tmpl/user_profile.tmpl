@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+	<title>{{ .Title }}</title>
+</head>
+<body>
+    <nav>
+        <ul>
+            <li><a href="link1">Список пользователей</a></li>
+            <li><a href="link2">Добавить друга</a></li>
+            <li>
+                <small>{{ .SelfUserName }}</small>
+                <form method="post" action="/logout">
+                    <button type="submit">Logout</button>
+                </form>
+            </li>
+        </ul>
+    </nav>
+    <div role="main">
+	    <h1></h1>
+        <div>{{ .UserName }}</div>
+        <div>
+            <form method="post" action="/user/{{ .UserName }}/add_to_friends">
+                <button type="submit">Add to friends</button>
+            </form>
+        </div>
+        <div>{{ .Name }}</div>
+        <div>{{ .Surname }}</div>
+        <div>{{ .Age }}</div>
+        <div>{{ .BirthDate }}</div>
+        <div>{{ .Gender }}</div>
+        <div>{{ .City }}</div>
+        <div>
+            {{range $i := .Interests}}
+                {{$i}}
+            {{end}}
+        </div>
+        <div>
+            {{range $f := .Friends}}
+                {{$f}}
+            {{end}}
+        </div>
+    </div>
+</body>
+</html>

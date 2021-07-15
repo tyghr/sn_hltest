@@ -1,0 +1,11 @@
+{
+  "apiport": 80,
+  "config": "./config.json",
+  "dbhost": "localhost",
+  "dbname": "sntest",
+  "dbpass": "secretpass",
+  "dbport": 3306,
+  "dbtype": "mysql",
+  "dbuser": "root",
+  "loglevel": -1
+}

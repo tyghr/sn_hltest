@@ -1,0 +1,42 @@
+    login
+        username
+        password (hash)
+
+    register
+        username
+        password    
+        name
+        surname
+        birthdate
+        gender
+        interests
+        city
+
+    profile
+        username
+        name
+        surname
+        age + birthdate
+        gender
+        interests
+        city
+        friends
+        add_to_friend
+
+    user_page
+        username
+        posts
+
+    search_user
+        username
+        name
+        surname
+        birthdate
+        gender
+        interests
+        city
+        friends
+
+    add_post + edit_post
+    delete_post
+    add_friend

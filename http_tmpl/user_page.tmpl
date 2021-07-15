@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+	<title>{{ .Title }}</title>
+</head>
+<body>
+    <nav>
+        <ul>
+            <li><a href="link1">Список пользователей</a></li>
+            <li><a href="link2">Добавить друга</a></li>
+            <li>
+                <small>{{ .SelfUserName }}</small>
+                <form method="post" action="/logout">
+                    <button type="submit">Logout</button>
+                </form>
+            </li>
+        </ul>
+    </nav>
+	<div role="main">
+		<h1>{{ .UserName }}</h1>
+		<div>
+            {{range .Posts}}
+                <div>{{ .Header }}}</div>
+                <div>{{ .Updated }}</div>
+                <div>{{ .Text }}</div>
+		    {{else}}
+			    <div>no posts</div>
+            {{end}}
+        </div>
+	</div>
+</body>
+</html>

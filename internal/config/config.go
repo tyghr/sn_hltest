@@ -1,10 +1,6 @@
 package config
 
 import (
-	"fmt"
-	"path"
-	"strings"
-
 	"github.com/spf13/pflag"
 	"github.com/spf13/viper"
 )
@@ -16,38 +12,38 @@ const (
 
 type Config struct {
 	viper.Viper
-	ConfigName string
-	ConfigType string
-	ConfigPath string
-	LogLevel   int
-	ApiPort    int
-	DBtype     string
-	DBhost     string
-	DBport     int
-	DBname     string
-	DBuser     string
-	DBpass     string
+	// ConfigName string
+	// ConfigType string
+	// ConfigPath string
+	LogLevel int
+	ApiPort  int
+	DBtype   string
+	DBhost   string
+	DBport   int
+	DBname   string
+	DBuser   string
+	DBpass   string
 }
 
 func NewConfig() *Config {
 	return &Config{
-		Viper:      *viper.New(),
-		ConfigName: "config",
-		ConfigType: "json",
-		ConfigPath: "./", // change in prod to "/etc/social_network/"
-		LogLevel:   -1,
-		ApiPort:    80,
-		DBtype:     DBMysql,
-		DBhost:     "localhost",
-		DBport:     3306,
-		DBname:     "sntest",
-		DBuser:     "root",
-		DBpass:     "secretpass",
+		Viper: *viper.New(),
+		// ConfigName: "config",
+		// ConfigType: "json",
+		// ConfigPath: "./", // change in prod to "/etc/social_network/"
+		LogLevel: -1,
+		ApiPort:  80,
+		DBtype:   DBMysql,
+		DBhost:   "localhost",
+		DBport:   3306,
+		DBname:   "sntest",
+		DBuser:   "root",
+		DBpass:   "secretpass",
 	}
 }
 
 func init() {
-	pflag.String("config", "", "config file path")
+	// pflag.String("config", "", "config file path")
 	pflag.Int("loglevel", 0, "debug level (debug:-1 .. fatal:5)")
 	pflag.Int("apiport", 0, "API port")
 	pflag.String("dbtype", "", "DB type")
@@ -71,7 +67,7 @@ func (conf *Config) bindAllEnv() {
 
 func (conf *Config) bindAllFlags() {
 	pflag.Parse()
-	_ = conf.BindPFlag("config", pflag.Lookup("config"))
+	// _ = conf.BindPFlag("config", pflag.Lookup("config"))
 	_ = conf.BindPFlag("apiport", pflag.Lookup("apiport"))
 	_ = conf.BindPFlag("loglevel", pflag.Lookup("loglevel"))
 	_ = conf.BindPFlag("dbtype", pflag.Lookup("dbtype"))
@@ -83,7 +79,7 @@ func (conf *Config) bindAllFlags() {
 }
 
 func (conf *Config) setDefaults() {
-	conf.SetDefault("config", fmt.Sprintf("%s/%s.%s", strings.TrimSuffix(conf.ConfigPath, "/"), conf.ConfigName, conf.ConfigType))
+	// conf.SetDefault("config", fmt.Sprintf("%s/%s.%s", strings.TrimSuffix(conf.ConfigPath, "/"), conf.ConfigName, conf.ConfigType))
 	conf.SetDefault("apiport", conf.ApiPort)
 	conf.SetDefault("loglevel", conf.LogLevel)
 	conf.SetDefault("dbtype", conf.DBtype)
@@ -107,25 +103,25 @@ func (conf *Config) ReadAllSettings() error {
 	conf.bindAllEnv()
 	conf.bindAllFlags()
 
-	flagConfig := conf.GetString("config")
-	if flagConfig != "" {
-		conf.ConfigPath = path.Dir(flagConfig)
-		conf.ConfigType = strings.TrimPrefix(path.Ext(flagConfig), ".")
-		if conf.ConfigType != "" {
-			conf.ConfigName = strings.TrimSuffix(path.Base(flagConfig), "."+conf.ConfigType)
-		} else {
-			conf.ConfigName = path.Base(flagConfig)
-		}
-	}
+	// flagConfig := conf.GetString("config")
+	// if flagConfig != "" {
+	// 	conf.ConfigPath = path.Dir(flagConfig)
+	// 	conf.ConfigType = strings.TrimPrefix(path.Ext(flagConfig), ".")
+	// 	if conf.ConfigType != "" {
+	// 		conf.ConfigName = strings.TrimSuffix(path.Base(flagConfig), "."+conf.ConfigType)
+	// 	} else {
+	// 		conf.ConfigName = path.Base(flagConfig)
+	// 	}
+	// }
 
-	conf.SetConfigName(conf.ConfigName) // read config
-	conf.SetConfigType(conf.ConfigType)
-	conf.AddConfigPath(conf.ConfigPath)
-	if err := conf.ReadInConfig(); err != nil {
-		if errW := conf.WriteConfigAs(fmt.Sprintf("%s/%s.%s", conf.ConfigPath, conf.ConfigName, conf.ConfigType)); errW != nil {
-			return err
-		}
-	}
+	// conf.SetConfigName(conf.ConfigName) // read config
+	// conf.SetConfigType(conf.ConfigType)
+	// conf.AddConfigPath(conf.ConfigPath)
+	// if err := conf.ReadInConfig(); err != nil {
+	// 	if errW := conf.WriteConfigAs(fmt.Sprintf("%s/%s.%s", conf.ConfigPath, conf.ConfigName, conf.ConfigType)); errW != nil {
+	// 		return err
+	// 	}
+	// }
 
 	conf.ApiPort = conf.GetInt("apiport")
 	conf.LogLevel = conf.GetInt("loglevel")

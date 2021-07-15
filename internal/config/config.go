@@ -56,7 +56,7 @@ func init() {
 
 func (conf *Config) bindAllEnv() {
 	_ = conf.BindEnv("loglevel", "SOCIAL_NETWORK_LOGLEVEL")
-	_ = conf.BindEnv("apiport", "SOCIAL_NETWORK_APIPORT")
+	_ = conf.BindEnv("apiport", "PORT") // SOCIAL_NETWORK_APIPORT
 	_ = conf.BindEnv("dbtype", "SOCIAL_NETWORK_DBTYPE")
 	_ = conf.BindEnv("dbhost", "SOCIAL_NETWORK_DBHOST")
 	_ = conf.BindEnv("dbport", "SOCIAL_NETWORK_DBPORT")

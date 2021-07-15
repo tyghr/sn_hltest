@@ -17,7 +17,7 @@ type DB struct {
 }
 
 func OpenConn(conf *config.Config, l logger.Logger) (*DB, error) {
-	db, err := sqlx.Connect("mysql", fmt.Sprintf("%s:%s@/%s", conf.DBuser, conf.DBpass, conf.DBname))
+	db, err := sqlx.Connect("mysql", fmt.Sprintf("%s:%s@tcp(%s:%d)/%s", conf.DBuser, conf.DBpass, conf.DBhost, conf.DBport, conf.DBname))
 	if err != nil {
 		return nil, err
 	}

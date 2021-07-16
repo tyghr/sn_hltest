@@ -32,15 +32,14 @@ func (db *DB) Register(ctx context.Context, user model.User) error {
 	}
 	_, err := db.NamedExecContext(ctx,
 		`INSERT INTO users (username, phash, name, surname, birthdate, gender, city)
-		VALUES (:username, :phash, :name, :surname, :birthdate, :gender, :city)`,
+		VALUES (:username, :phash, :name, :surname, :birthdate, :gender, :city);`,
 		// ON DUPLICATE KEY UPDATE
-		// 	username = VALUES(username),
 		// 	phash = VALUES(phash),
 		// 	name = VALUES(name),
 		// 	surname = VALUES(surname),
 		// 	birthdate = VALUES(birthdate),
 		// 	gender = VALUES(gender),
-		// 	city = VALUES(city)`,
+		// 	city = VALUES(city);`,
 		user,
 	)
 	if err != nil {
@@ -48,15 +47,20 @@ func (db *DB) Register(ctx context.Context, user model.User) error {
 	}
 
 	for _, i := range user.Interests {
+		_, err = db.ExecContext(ctx,
+			`INSERT INTO d_interests(name) VALUES (?)
+			ON DUPLICATE KEY UPDATE id=id;`,
+			i,
+		)
+		if err != nil {
+			return err
+		}
+
 		_, err = db.NamedExecContext(ctx,
-			`WITH
-			di AS ( INSERT INTO d_interests(name) VALUES (:interest) ON CONFLICT(name) DO UPDATE SET name=EXCLUDED.name RETURNING id),
-			INSERT INTO interests (user, interest)
-			VALUES ((SELECT id FROM users WHERE users.username=:username), (SELECT id FROM di));`,
-			// ON DUPLICATE KEY UPDATE
-			// 	user = VALUES(user),
-			// 	interest = VALUES(interest);`,
-			map[string]string{
+			`INSERT INTO interests (user, interest)
+			VALUES ((SELECT id FROM users WHERE users.username=:username), (SELECT id FROM d_interests WHERE d_interests.name=:interest))
+			ON DUPLICATE KEY UPDATE interest=interest;`,
+			map[string]interface{}{
 				"username": user.UserName,
 				"interest": i,
 			},
@@ -64,6 +68,21 @@ func (db *DB) Register(ctx context.Context, user model.User) error {
 		if err != nil {
 			return err
 		}
+
+		// _, err = db.NamedExecContext(ctx,
+		// 	`WITH
+		// 	di AS ( INSERT INTO d_interests(name) VALUES (:interest) ON CONFLICT(name) DO UPDATE SET name=EXCLUDED.name RETURNING id),
+		// 	INSERT INTO interests (user, interest)
+		// 	VALUES ((SELECT id FROM users WHERE users.username=:username), (SELECT id FROM di));`,
+		// 	ON DUPLICATE KEY UPDATE user = VALUES(user), interest = VALUES(interest);`,
+		// 	map[string]interface{}{
+		// 		"username": user.UserName,
+		// 		"interest": i,
+		// 	},
+		// )
+		// if err != nil {
+		// 	return err
+		// }
 	}
 
 	// TODO index for interests

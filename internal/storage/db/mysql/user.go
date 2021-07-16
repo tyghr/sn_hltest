@@ -84,11 +84,9 @@ func (db *DB) AddFriend(ctx context.Context, user, friend string) error {
 
 	_, err := db.NamedExecContext(ctx,
 		`INSERT INTO friends (user, friend)
-		VALUES ((SELECT id FROM users WHERE users.username=:user), (SELECT id FROM users WHERE users.username=:friend));`,
-		// ON DUPLICATE KEY UPDATE
-		// 	user = VALUES(user),
-		// 	friend = VALUES(friend);`,
-		map[string]string{
+		VALUES ((SELECT id FROM users WHERE users.username=:user), (SELECT id FROM users WHERE users.username=:friend))
+		ON DUPLICATE KEY UPDATE friend=friend;`,
+		map[string]interface{}{
 			"user":   user,
 			"friend": friend,
 		},

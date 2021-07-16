@@ -16,7 +16,8 @@ var (
 )
 
 type postPage struct {
-	Title string
+	Title    string
+	UserName string
 }
 
 type post struct {
@@ -36,7 +37,8 @@ func (s *Server) showEditPost() http.HandlerFunc {
 
 		t := template.Must(template.New(path.Base(postTmpl)).ParseFiles(postTmpl))
 		err := t.Execute(w, postPage{
-			Title: globalTitle,
+			Title:    globalTitle,
+			UserName: "TODO",
 		})
 		if err != nil {
 			s.logger.Errorf("failed render post edit template: %v", err)

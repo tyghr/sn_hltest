@@ -10,6 +10,7 @@ CREATE TABLE `users` (
   `birthdate` datetime,
   `gender` tinyint(1) DEFAULT 0,
   `city` varchar(200),
+  CONSTRAINT users_uc_username UNIQUE(username),
   PRIMARY KEY (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
@@ -25,15 +26,18 @@ CREATE TABLE `posts` (
 CREATE TABLE `d_interests` (
   `id` bigint(20) NOT NULL AUTO_INCREMENT,
   `name` varchar(100),
+  CONSTRAINT d_interests_uc_name UNIQUE(name),
   PRIMARY KEY (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
 CREATE TABLE `interests` (
   `user` bigint(20) NOT NULL,
-  `interest` bigint(20) NOT NULL
+  `interest` bigint(20) NOT NULL,
+  CONSTRAINT interests_uc_user_interest UNIQUE(user, interest)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
 CREATE TABLE `friends` (
   `user` bigint(20) NOT NULL,
-  `friend` bigint(20) NOT NULL
+  `friend` bigint(20) NOT NULL,
+  CONSTRAINT friends_uc_user_friend UNIQUE(user, friend)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;

@@ -7,8 +7,7 @@
 <body>
     <nav>
         <ul>
-            <li><a href="link1">Список пользователей</a></li>
-            <li><a href="link2">Добавить друга</a></li>
+            <li><a href="link1">UNDER CONSTRUCTION</a></li>
             <li>
                 <small>{{ .SelfUserName }}</small>
                 <form method="post" action="/logout">
@@ -18,28 +17,27 @@
         </ul>
     </nav>
     <div role="main">
-	    <h1></h1>
-        <div>{{ .UserName }}</div>
-        <div>
-            <form method="post" action="/user/{{ .UserName }}/add_to_friends">
-                <button type="submit">Add to friends</button>
-            </form>
-        </div>
-        <div>{{ .Name }}</div>
-        <div>{{ .Surname }}</div>
-        <div>{{ .Age }}</div>
-        <div>{{ .BirthDate }}</div>
-        <div>{{ .Gender }}</div>
-        <div>{{ .City }}</div>
-        <div>
+	    <h1>{{ .UserName }} profile:</h1>
+        <div>Name: {{ .Name }}</div>
+        <div>SurName: {{ .SurName }}</div>
+        <div>Age: {{ .Age }}</div>
+        <div>BirthDate: {{ .BirthDate.Format "02 Jan" }}</div>
+        <div>Gender: {{ .Gender }}</div>
+        <div>City: {{ .City }}</div>
+        <div>Interests:
             {{range $i := .Interests}}
                 {{$i}}
             {{end}}
         </div>
-        <div>
+        <div>Friends:
             {{range $f := .Friends}}
                 {{$f}}
             {{end}}
+        </div>
+        <div>
+            <form method="post" action="/user/{{ .UserName }}/add_to_friends">
+                <button type="submit">Add to friends</button>
+            </form>
         </div>
     </div>
 </body>

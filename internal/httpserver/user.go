@@ -30,9 +30,9 @@ type userProfile struct {
 	UserName     string
 	Name         string
 	SurName      string
-	Gender       string
 	Age          int
 	BirthDate    time.Time
+	Gender       string
 	City         string
 	Interests    []string
 	Friends      []string
@@ -125,7 +125,7 @@ func (s *Server) showProfile() http.HandlerFunc {
 			Friends:      profile.Friends,
 		})
 		if err != nil {
-			s.logger.Errorf("failed render user rofile template: %v", err)
+			s.logger.Errorf("failed render user profile template: %v", err)
 		}
 	}
 }

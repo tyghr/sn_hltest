@@ -7,8 +7,7 @@
 <body>
     <nav>
         <ul>
-            <li><a href="link1">Список пользователей</a></li>
-            <li><a href="link2">Добавить друга</a></li>
+            <li><a href="link1">UNDER CONSTRUCTION</a></li>
             <li>
                 <small>{{ .SelfUserName }}</small>
                 <form method="post" action="/logout">
@@ -18,7 +17,7 @@
         </ul>
     </nav>
 	<div role="main">
-		<h1>{{ .UserName }}</h1>
+		<h1>{{ .UserName }} posts:</h1>
 		<div>
             {{range .Posts}}
                 <div>{{ .Header }}}</div>

@@ -16,7 +16,8 @@ var (
 )
 
 type searchUserPage struct {
-	Title string
+	Title    string
+	UserName string
 }
 
 type searchUser struct {
@@ -44,7 +45,8 @@ func (s *Server) showSearchUser() http.HandlerFunc {
 
 		t := template.Must(template.New(path.Base(userSearchTmpl)).ParseFiles(userSearchTmpl))
 		err := t.Execute(w, searchUserPage{
-			Title: globalTitle,
+			Title:    globalTitle,
+			UserName: "TODO",
 		})
 		if err != nil {
 			s.logger.Errorf("failed render user search template: %v", err)

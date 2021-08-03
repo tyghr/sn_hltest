@@ -1,0 +1,227 @@
+################################
+
+Сгенерировать любым способ 1,000,000 анкет. Имена и Фамилии должны быть реальными (чтобы учитывать селективность индекса)
+
+Реализовать функционал поиска анкет по префиксу имени и фамилии (одновременно) в вашей социальной сети (запрос в форме firstName LIKE ? and secondName LIKE ?). Сортировать вывод по id анкеты
+
+С помощью wrk провести нагрузочные тесты по этой странице. Поиграть с количеством одновременных запросов. 1/10/100/1000.
+    графики latency до индекса;
+    графики throughput до индекса;
+
+Сделать подходящий индекс.
+    запрос добавления индекса;
+    explain запросов после индекса;
+    объяснение почему индекс именно такой;
+
+Повторить пункт 3 и 4.
+    графики latency после индекса;
+    графики throughput после индекса;
+
+################################
+
+// создаем mysql инстанс
+docker run --name mysql-test -e MYSQL_ROOT_PASSWORD=secretpass -p 3306:3306 -d mysql
+// создаем схему
+docker exec -it mysql-test mysql -u root -p
+
+// запускаем сервер
+go run .\cmd\main.go
+// запускаем генератор учеток
+go run .\cmd\usergen\main.go
+
+// проверяем количество пользователей
+mysql> select count(username) from users;
++-----------------+
+| count(username) |
++-----------------+
+|         1041177 |
++-----------------+
+1 row in set (0.22 sec)
+
+// проверяем запрос
+cmd /c curl -X POST --data-urlencode 'first_name=Den%' --data-urlencode 'second_name=Ku%' http://127.0.0.1/search/user
+
+// запускаем тест нагрузки
+wrk http://127.0.0.1/search/user -s search.lua --latency -t 1 -c 1 -d 60s
+    Running 1m test @ http://127.0.0.1/search/user
+    1 threads and 1 connections
+    Thread Stats   Avg      Stdev     Max   +/- Stdev
+        Latency   500.10ms   66.35ms 743.94ms   89.17%
+        Req/Sec     1.65      0.48     2.00     65.00%
+    Latency Distribution
+        50%  478.60ms
+        75%  488.94ms
+        90%  590.95ms
+        99%  743.81ms
+    120 requests in 1.00m, 1.03MB read
+    Requests/sec:      2.00
+    Transfer/sec:     17.54KB
+
+wrk http://127.0.0.1/search/user -s search.lua --latency -t 10 -c 10 -d 60s
+    Running 1m test @ http://127.0.0.1/search/user
+    10 threads and 10 connections
+    Thread Stats   Avg      Stdev     Max   +/- Stdev
+        Latency   971.61ms   98.07ms   1.17s    57.87%
+        Req/Sec     0.53      0.50     1.00     52.62%
+    Latency Distribution
+        50%  951.25ms
+        75%    1.07s
+        90%    1.10s
+        99%    1.14s
+    610 requests in 1.00m, 5.23MB read
+    Requests/sec:     10.15
+    Transfer/sec:     89.17KB
+
+wrk http://127.0.0.1/search/user -s search.lua --latency -t 10 -c 100 -d 60s
+    Running 1m test @ http://127.0.0.1/search/user
+    10 threads and 100 connections
+    Thread Stats   Avg      Stdev     Max   +/- Stdev
+        Latency     1.49s   402.88ms   2.00s    58.57%
+        Req/Sec     2.50      4.87    60.00     85.13%
+    Latency Distribution
+        50%    1.67s
+        75%    1.85s
+        90%    1.92s
+        99%    2.00s
+    621 requests in 1.00m, 5.14MB read
+    Socket errors: connect 0, read 0, write 0, timeout 551
+    Non-2xx or 3xx responses: 23
+    Requests/sec:     10.33
+    Transfer/sec:     87.51KB
+
+wrk http://127.0.0.1/search/user -s search.lua --latency -t 10 -c 500 -d 60s
+    Running 1m test @ http://127.0.0.1/search/user
+    10 threads and 500 connections
+    Thread Stats   Avg      Stdev     Max   +/- Stdev
+        Latency     1.39s   439.50ms   1.96s    59.09%
+        Req/Sec     4.32     11.08   160.00     96.10%
+    Latency Distribution
+        50%    1.74s
+        75%    1.83s
+        90%    1.84s
+        99%    1.96s
+    1104 requests in 1.00m, 5.02MB read
+    Socket errors: connect 0, read 0, write 0, timeout 1082
+    Non-2xx or 3xx responses: 533
+    Requests/sec:     18.37
+    Transfer/sec:     85.54KB
+
+wrk http://127.0.0.1/search/user -s search.lua --latency -t 10 -c 1000 -d 60s
+    Running 1m test @ http://127.0.0.1/search/user
+    10 threads and 1000 connections
+    Thread Stats   Avg      Stdev     Max   +/- Stdev
+        Latency     1.48s   439.34ms   1.96s    65.00%
+        Req/Sec     8.63     37.37   480.00     97.22%
+    Latency Distribution
+        50%    1.87s
+        75%    1.91s
+        90%    1.93s
+        99%    1.96s
+    1646 requests in 1.00m, 5.13MB read
+    Socket errors: connect 0, read 0, write 0, timeout 1626
+    Non-2xx or 3xx responses: 1077
+    Requests/sec:     27.39
+    Transfer/sec:     87.40KB
+
+// создаем индексы
+CREATE INDEX users_name_idx ON users (name);
+CREATE INDEX users_surname_idx on users (surname);
+
+EXPLAIN ANALYZE SELECT username,name,surname,birthdate,gender,city FROM users
+ WHERE name LIKE 'Den%' AND surname LIKE 'Ku%'
+ ORDER BY id ASC LIMIT 100;
+| EXPLAIN
+| -> Limit: 100 row(s)  (actual time=5.448..5.456 rows=23 loops=1)
+    -> Sort: users.id, limit input to 100 row(s) per chunk  (cost=469.78 rows=1032) (actual time=5.447..5.454 rows=23 loops=1)
+        -> Filter: (users.surname like 'Ku%')  (actual time=0.364..5.415 rows=23 loops=1)
+            -> Index range scan on users using users_name_idx, with index condition: (users.`name` like 'Den%')  (actual time=0.360..5.316 rows=1032 loops=1)
+
+EXPLAIN ANALYZE SELECT username,name,surname,birthdate,gender,city FROM users
+ WHERE name LIKE 'Den%' AND surname LIKE 'Kek%'
+ ORDER BY id ASC LIMIT 100;
+| EXPLAIN
+| -> Limit: 100 row(s)  (actual time=0.032..0.032 rows=0 loops=1)
+    -> Sort: users.id, limit input to 100 row(s) per chunk  (cost=0.72 rows=1) (actual time=0.031..0.031 rows=0 loops=1)
+        -> Filter: (users.`name` like 'Den%')  (actual time=0.022..0.022 rows=0 loops=1)
+            -> Index range scan on users using users_surname_idx, with index condition: (users.surname like 'Kek%')  (actual time=0.021..0.021 rows=0 loops=1)
+
+// Сделал два отдельных индекса на имя и фамилию, т.к. запрос поиска может быть и по имени и по фамилии.
+// Один индекс на (name,surname) нам поможет меньше.
+
+// повторно запускаем тест нагрузки
+wrk http://127.0.0.1/search/user -s search.lua --latency -t 1 -c 1 -d 60s
+    Running 1m test @ http://127.0.0.1/search/user
+    1 threads and 1 connections
+    Thread Stats   Avg      Stdev     Max   +/- Stdev
+        Latency     8.31ms    1.58ms  24.75ms   66.53%
+        Req/Sec   120.72     19.36   160.00     48.67%
+    Latency Distribution
+        50%    7.82ms
+        75%    9.67ms
+        90%   10.41ms
+        99%   12.44ms
+    7223 requests in 1.00m, 61.97MB read
+    Requests/sec:    120.27
+    Transfer/sec:      1.03MB
+
+wrk http://127.0.0.1/search/user -s search.lua --latency -t 10 -c 10 -d 60s
+    Running 1m test @ http://127.0.0.1/search/user
+    10 threads and 10 connections
+    Thread Stats   Avg      Stdev     Max   +/- Stdev
+        Latency   185.57ms  240.54ms 978.58ms   80.24%
+        Req/Sec    39.82     30.12    90.00     44.60%
+    Latency Distribution
+        50%   18.06ms
+        75%  346.42ms
+        90%  572.31ms
+        99%  882.26ms
+    10277 requests in 1.00m, 88.23MB read
+    Requests/sec:    171.01
+    Transfer/sec:      1.47MB
+
+wrk http://127.0.0.1/search/user -s search.lua --latency -t 10 -c 100 -d 60s
+    Running 1m test @ http://127.0.0.1/search/user
+    10 threads and 100 connections
+    Thread Stats   Avg      Stdev     Max   +/- Stdev
+        Latency   565.23ms  340.36ms   1.56s    49.33%
+        Req/Sec    40.43     33.94   260.00     59.90%
+    Latency Distribution
+        50%  714.82ms
+        75%  778.73ms
+        90%  968.56ms
+        99%    1.08s
+    10540 requests in 1.00m, 90.64MB read
+    Requests/sec:    175.38
+    Transfer/sec:      1.51MB
+
+wrk http://127.0.0.1/search/user -s search.lua --latency -t 10 -c 500 -d 60s
+    Running 1m test @ http://127.0.0.1/search/user
+    10 threads and 500 connections
+    Thread Stats   Avg      Stdev     Max   +/- Stdev
+        Latency     1.26s   588.75ms   2.00s    71.75%
+        Req/Sec    40.88     39.70   252.00     80.38%
+    Latency Distribution
+        50%    1.50s
+        75%    1.69s
+        90%    1.78s
+        99%    1.97s
+    10101 requests in 1.00m, 87.70MB read
+    Socket errors: connect 0, read 0, write 0, timeout 9262
+    Requests/sec:    168.11
+    Transfer/sec:      1.46MB
+
+wrk http://127.0.0.1/search/user -s search.lua --latency -t 10 -c 1000 -d 60s
+    Running 1m test @ http://127.0.0.1/search/user
+    10 threads and 1000 connections
+    Thread Stats   Avg      Stdev     Max   +/- Stdev
+        Latency     1.10s   691.99ms   2.00s    40.77%
+        Req/Sec    32.26     50.04   676.00     91.16%
+    Latency Distribution
+        50%    1.26s
+        75%    1.86s
+        90%    1.97s
+        99%    2.00s
+    8666 requests in 1.00m, 76.07MB read
+    Socket errors: connect 0, read 1617, write 0, timeout 8536
+    Requests/sec:    144.19
+    Transfer/sec:      1.27MB

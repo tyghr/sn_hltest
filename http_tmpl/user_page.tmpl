@@ -7,7 +7,7 @@
 <body>
     <nav>
         <ul>
-            <li><a href="link1">UNDER CONSTRUCTION</a></li>
+            <li><a href="/search/user">Search user</a></li>
             <li>
                 <small>{{ .SelfUserName }}</small>
                 <form method="post" action="/logout">
@@ -17,7 +17,7 @@
         </ul>
     </nav>
 	<div role="main">
-		<h1>{{ .UserName }} posts:</h1>
+		<h1><a href="/user/{{ .UserName }}/profile">{{ .UserName }}</a> posts:</h1>
 		<div>
             {{range .Posts}}
                 <div>{{ .Header }}}</div>

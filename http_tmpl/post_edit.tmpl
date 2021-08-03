@@ -7,7 +7,7 @@
 <body>
     <nav>
         <ul>
-            <li><a href="link1">UNDER CONSTRUCTION</a></li>
+            <li><a href="/search/user">Search user</a></li>
             <li>
                 <small>{{ .UserName }}</small>
                 <form method="post" action="/logout">
@@ -18,7 +18,7 @@
     </nav>
     <div role="main">
 	    <h1></h1>
-        <form method="post" action="register" enctype="x-www-form-urlencoded" id="form_post" novalidate="">
+        <form method="post" action="post_edit" enctype="x-www-form-urlencoded" id="form_post" novalidate="">
             <label for="name">Name</label>
             <input type="text" name="name" id="name">
             <label for="text">Text</label>

@@ -37,8 +37,8 @@ func NewConfig() *Config {
 		DBhost:   "localhost",
 		DBport:   3306,
 		DBname:   "sntest",
-		DBuser:   "testuser",
-		DBpass:   "testpass",
+		DBuser:   "root",       // !! CHANGE to testuser
+		DBpass:   "secretpass", // !! CHANGE to testpass
 	}
 }
 

@@ -7,46 +7,92 @@
 <body>
     <nav>
         <ul>
-            <li><a href="link1">UNDER CONSTRUCTION</a></li>
-            <li>
-                <small>{{ .UserName }}</small>
-                <form method="post" action="/logout">
-                    <button type="submit">Logout</button>
-                </form>
-            </li>
+            <li><a href="/search/user">Search user</a></li>
+            {{ if ne .SelfUserName "" }}
+                <li>
+                    <small>{{ .SelfUserName }}</small>
+                    <form method="post" action="/logout">
+                        <button type="submit">Logout</button>
+                    </form>
+                </li>
+            {{ end }}
         </ul>
     </nav>
     <div role="main">
 	    <h1></h1>
-        <form method="post" action="register" enctype="x-www-form-urlencoded" id="form_post" novalidate="">
+        <form method="post" action="/search/user" enctype="x-www-form-urlencoded" id="form_post" novalidate="">
             <label for="username">Username</label>
-            <input type="text" name="username" id="username">
+            <input type="text" name="username" id="username" value="{{ .UserName }}">
             <label for="first_name">First name</label>
-            <input type="text" name="first_name" id="first_name">
+            <input type="text" name="first_name" id="first_name" value="{{ .Name }}">
             <label for="second_name">Second name</label>
-            <input type="text" name="second_name" id="second_name">
+            <input type="text" name="second_name" id="second_name" value="{{ .SurName }}">
             <label for="gender">Gender</label>
             <select type="text" name="gender" id="gender">
-                <option selected>ALl</option>
+            {{ if eq .Gender "M" }}
+                <option>All</option>
+                <option selected>M</option>
+                <option>F</option>
+            {{ else if eq .Gender "F" }}
+                <option>All</option>
+                <option>M</option>
+                <option selected>F</option>
+            {{ else }}
+                <option selected>All</option>
                 <option>M</option>
                 <option>F</option>
+            {{ end }}
             </select>
-            <label for="birthdate_from">Birthdate from</label>
-            <input type="date" name="birthdate_from" id="birthdate_from">
+            {{/* <label for="birthdate_from">Birthdate from</label>
+            <input type="date" name="birthdate_from" id="birthdate_from" value="{{ .BirthDateFrom }}">
             <label for="birthdate_to">Birthdate to</label>
-            <input type="date" name="birthdate_to" id="birthdate_to">
+            <input type="date" name="birthdate_to" id="birthdate_to" value="{{ .BirthDateTo }}">
             <label for="age_from">Age from</label>
-            <input type="text" name="age_from" id="age_from">
+            <input type="text" name="age_from" id="age_from" value="{{ .AgeFrom }}">
             <label for="age_to">Age to</label>
-            <input type="text" name="age_to" id="age_to">
+            <input type="text" name="age_to" id="age_to" value="{{ .AgeTo }}"> */}}
             <label for="city">City</label>
-            <input type="text" name="city" id="city">
-            <label for="interests">Interests</label>
-            <input type="text" name="interests" id="interests">
+            <input type="text" name="city" id="city" value="{{ .City }}">
+            {{/* <label for="interests">Interests</label>
+            <input type="text" name="interests" id="interests" value="{{ .Interests }}">
             <label for="friends">Friends</label>
-            <input type="text" name="friends" id="friends">
+            <input type="text" name="friends" id="friends" value="{{ .Friends }}"> */}}
             <input type="submit" value="Search">
         </form>
     </div>
+	<div role="list">
+        <table>
+			<tr>
+				<th>UserName</th>
+				<th>Name</th>
+				<th>SurName</th>
+				<th>Gender</th>
+                <th>Age</th>
+                <th>BirthDate</th>
+                <th>City</th>
+			</tr>
+            {{range .FoundUsers}}
+                <tr>
+                    <td>{{ .UserName }}</td>
+                    <td>{{ .Name }}</td>
+                    <td>{{ .SurName }}</td>
+                    <td>{{ .Gender }}</td>
+                    <td>{{ .Age }}</td>
+                    <td>{{ .BirthDate.Format "02 Jan" }}</td>
+                    <td>{{ .City }}</td>
+                </tr>
+		    {{else}}
+                <tr>
+                    <td></td>
+                    <td></td>
+                    <td></td>
+                    <td></td>
+                    <td></td>
+                    <td></td>
+                    <td></td>
+                </tr>
+            {{end}}
+		</table>
+	</div>
 </body>
 </html>

@@ -16,12 +16,34 @@ var (
 )
 
 type searchUserPage struct {
-	Title    string
-	UserName string
+	Title         string
+	SelfUserName  string
+	UserName      string
+	Name          string
+	SurName       string
+	Gender        string
+	BirthDateFrom time.Time
+	BirthDateTo   time.Time
+	AgeFrom       string
+	AgeTo         string
+	City          string
+	Interests     string
+	Friends       string
+	FoundUsers    []foundUser
+}
+
+type foundUser struct {
+	UserName  string
+	Name      string
+	SurName   string
+	Age       int
+	BirthDate time.Time
+	Gender    string
+	City      string
 }
 
 type searchUser struct {
-	UserName      string    `schema:"username,required"`
+	UserName      string    `schema:"username"`
 	Name          string    `schema:"first_name"`
 	SurName       string    `schema:"second_name"`
 	Gender        string    `schema:"gender"` // ALL|M|F
@@ -38,15 +60,17 @@ func (s *Server) showSearchUser() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		//w.Header().Set("Content-Type", "application/json; charset=utf8")
 
-		// ctx, cancel := context.WithTimeout(r.Context(), timeoutDefault)
-		// defer cancel()
+		ctx, cancel := context.WithTimeout(r.Context(), timeoutDefault)
+		defer cancel()
 
 		s.logger.Debugf("showSearchUser query received")
 
+		selfUserName := ctx.Value(ctxKeyUserName).(string)
+
 		t := template.Must(template.New(path.Base(userSearchTmpl)).ParseFiles(userSearchTmpl))
 		err := t.Execute(w, searchUserPage{
-			Title:    globalTitle,
-			UserName: "TODO",
+			Title:        globalTitle,
+			SelfUserName: selfUserName,
 		})
 		if err != nil {
 			s.logger.Errorf("failed render user search template: %v", err)
@@ -97,7 +121,47 @@ func (s *Server) searchUser() http.HandlerFunc {
 			return
 		}
 
-		// TODO show user list page
-		s.respond(w, r, http.StatusOK, users)
+		selfUserName, ok := ctx.Value(ctxKeyUserName).(string)
+		if !ok {
+			selfUserName = ""
+		}
+
+		foundUsers := []foundUser{}
+		for _, fu := range users {
+			fuGender := "M"
+			if !fu.Gender {
+				fuGender = "F"
+			}
+			foundUsers = append(foundUsers, foundUser{
+				UserName:  fu.UserName,
+				Name:      fu.Name,
+				SurName:   fu.SurName,
+				Age:       int(time.Since(fu.BirthDate).Hours() / 24 / 365.25),
+				BirthDate: fu.BirthDate,
+				Gender:    fuGender,
+				City:      fu.City,
+			})
+		}
+
+		t := template.Must(template.New(path.Base(userSearchTmpl)).ParseFiles(userSearchTmpl))
+		err = t.Execute(w, searchUserPage{
+			Title:         globalTitle,
+			SelfUserName:  selfUserName,
+			UserName:      u.UserName,
+			Name:          u.Name,
+			SurName:       u.SurName,
+			Gender:        u.Gender,
+			BirthDateFrom: u.BirthDateFrom,
+			BirthDateTo:   u.BirthDateTo,
+			AgeFrom:       u.AgeFrom,
+			AgeTo:         u.AgeTo,
+			City:          u.City,
+			Interests:     u.Interests,
+			Friends:       u.Friends,
+			FoundUsers:    foundUsers,
+		})
+		if err != nil {
+			s.logger.Errorf("failed render user search template: %v", err)
+		}
 	}
 }

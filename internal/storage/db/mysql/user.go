@@ -73,10 +73,6 @@ func (db *DB) GetProfile(ctx context.Context, username string) (model.User, erro
 	return user, nil
 }
 
-func (db *DB) SearchUser(ctx context.Context, filter model.UserFilter) ([]model.User, error) {
-	return nil, nil
-}
-
 func (db *DB) AddFriend(ctx context.Context, user, friend string) error {
 	if err := db.PingContext(ctx); err != nil {
 		return fmt.Errorf("unable to connect to database: %v", err)

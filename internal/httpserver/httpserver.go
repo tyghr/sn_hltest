@@ -84,6 +84,7 @@ func (s *Server) configureRouter() {
 
 	s.router.HandleFunc("/register", s.showRegister()).Methods(http.MethodGet)
 	s.router.HandleFunc("/register", s.register()).Methods(http.MethodPost)
+	s.router.HandleFunc("/search/user", s.searchUser()).Methods(http.MethodPost) // TMP
 
 	s.router.HandleFunc("/logout", s.logout()).Methods(http.MethodPost)
 	s.router.HandleFunc("/login", s.login()).Methods(http.MethodPost)
@@ -94,7 +95,7 @@ func (s *Server) configureRouter() {
 	s.router.HandleFunc("/post/delete", s.authSession(s.deletePost())).Methods(http.MethodPost)
 
 	s.router.HandleFunc("/search/user", s.authSession(s.showSearchUser())).Methods(http.MethodGet)
-	s.router.HandleFunc("/search/user", s.authSession(s.searchUser())).Methods(http.MethodPost)
+	// s.router.HandleFunc("/search/user", s.authSession(s.searchUser())).Methods(http.MethodPost)
 
 	s.router.HandleFunc("/user/{user}", s.authSession(s.showUserPage())).Methods(http.MethodGet)
 	s.router.HandleFunc("/user/{user}/profile", s.authSession(s.showProfile())).Methods(http.MethodGet)

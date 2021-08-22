@@ -1,2 +1,8 @@
 docker run --name mysql-test -e MYSQL_ROOT_PASSWORD=secretpass -p 3306:3306 -d mysql
 docker exec -it mysql-test mysql -u root -p
+
+# Backup
+docker exec mysql-test /usr/bin/mysqldump -u root --password=secretpass sntest > sntest_bkp.sql
+
+# Restore
+cat sntest_bkp.sql | docker exec -i sn_mysql_master /usr/bin/mysql -u root --password=rsecretpassoot sntest

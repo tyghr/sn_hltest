@@ -1,0 +1,49 @@
+version: '3.7'
+
+services:
+  sn_mysql_node1:
+    image: mysql
+    container_name: sn_mysql_node1
+    command: --default-authentication-plugin=mysql_native_password
+    ports:
+      - '3306:3306'
+    environment:
+      MYSQL_ROOT_PASSWORD: secretpass
+      MYSQL_USER: testuser
+      MYSQL_PASSWORD: testpass
+      MYSQL_DATABASE: sntest
+    networks:
+      - sn_network
+
+  sn_mysql_node2:
+    image: mysql
+    container_name: sn_mysql_node2
+    command: --default-authentication-plugin=mysql_native_password
+    ports:
+      - '3307:3306'
+    environment:
+      MYSQL_ROOT_PASSWORD: secretpass
+      MYSQL_USER: testuser
+      MYSQL_PASSWORD: testpass
+      MYSQL_DATABASE: sntest
+    networks:
+      - sn_network
+
+  sn_mysql_node3:
+    image: mysql
+    container_name: sn_mysql_node3
+    command: --default-authentication-plugin=mysql_native_password
+    ports:
+      - '3308:3306'
+    environment:
+      MYSQL_ROOT_PASSWORD: secretpass
+      MYSQL_USER: testuser
+      MYSQL_PASSWORD: testpass
+      MYSQL_DATABASE: sntest
+    networks:
+      - sn_network
+
+networks:
+  sn_network:
+    name: sn_network
+    driver: bridge

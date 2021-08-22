@@ -54,7 +54,7 @@ func main() {
 		}()
 	}
 
-	for i := 0; i < 1_000_000; i++ {
+	for i := 0; i < 1_000; i++ {
 		wg.Add(1)
 		taskCh <- i
 	}

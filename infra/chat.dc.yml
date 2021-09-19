@@ -1,0 +1,63 @@
+version: '3'
+
+services:
+  chat:
+    build:
+      context: ../
+      dockerfile: infra/chat.Dockerfile
+    container_name: chat
+    depends_on:
+      - redis_node_5
+    ports:
+      - "8080:8080"
+
+  redis_node_0:
+    image: docker.io/bitnami/redis-cluster:6.2
+    container_name: redis_node_0
+    environment:
+      REDIS_PASSWORD: "bitnami"
+      REDIS_NODES: "redis_node_0 redis_node_1 redis_node_2 redis_node_3 redis_node_4 redis_node_5"
+
+  redis_node_1:
+    image: docker.io/bitnami/redis-cluster:6.2
+    container_name: redis_node_1
+    environment:
+      REDIS_PASSWORD: "bitnami"
+      REDIS_NODES: "redis_node_0 redis_node_1 redis_node_2 redis_node_3 redis_node_4 redis_node_5"
+
+  redis_node_2:
+    image: docker.io/bitnami/redis-cluster:6.2
+    container_name: redis_node_2
+    environment:
+      REDIS_PASSWORD: "bitnami"
+      REDIS_NODES: "redis_node_0 redis_node_1 redis_node_2 redis_node_3 redis_node_4 redis_node_5"
+
+  redis_node_3:
+    image: docker.io/bitnami/redis-cluster:6.2
+    container_name: redis_node_3
+    environment:
+      REDIS_PASSWORD: "bitnami"
+      REDIS_NODES: "redis_node_0 redis_node_1 redis_node_2 redis_node_3 redis_node_4 redis_node_5"
+
+  redis_node_4:
+    image: docker.io/bitnami/redis-cluster:6.2
+    container_name: redis_node_4
+    environment:
+      REDIS_PASSWORD: "bitnami"
+      REDIS_NODES: "redis_node_0 redis_node_1 redis_node_2 redis_node_3 redis_node_4 redis_node_5"
+
+  redis_node_5:
+    image: docker.io/bitnami/redis-cluster:6.2
+    container_name: redis_node_5
+    depends_on:
+      - redis_node_0
+      - redis_node_1
+      - redis_node_2
+      - redis_node_3
+      - redis_node_4
+    environment:
+      REDIS_PASSWORD: "bitnami"
+      REDISCLI_AUTH: "bitnami"
+      REDIS_CLUSTER_REPLICAS: 1
+      REDIS_NODES: "redis_node_0 redis_node_1 redis_node_2 redis_node_3 redis_node_4 redis_node_5"
+      REDIS_CLUSTER_CREATOR: "yes"

@@ -70,6 +70,7 @@ func (conf *Config) bindAllEnv() {
 	_ = conf.BindEnv("dbname", "SOCIAL_NETWORK_DBNAME")
 	_ = conf.BindEnv("dbuser", "SOCIAL_NETWORK_DBUSER")
 	_ = conf.BindEnv("dbpass", "SOCIAL_NETWORK_DBPASS")
+	_ = conf.BindEnv("dbmigrationpath", "SOCIAL_NETWORK_DBMIGRATIONPATH")
 
 	_ = conf.BindEnv("queuetype", "SOCIAL_NETWORK_QUEUETYPE")
 	_ = conf.BindEnv("queuehost", "SOCIAL_NETWORK_QUEUEHOST")

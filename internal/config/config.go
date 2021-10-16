@@ -1,6 +1,8 @@
 package config
 
 import (
+	"os"
+
 	"github.com/spf13/viper"
 )
 
@@ -68,7 +70,14 @@ func NewConfig() *Config {
 
 func (conf *Config) bindAllEnv() {
 	_ = conf.BindEnv("loglevel", "SOCIAL_NETWORK_LOGLEVEL")
-	_ = conf.BindEnv("apiport", "SOCIAL_NETWORK_APIPORT")
+
+	_, ok := os.LookupEnv("PORT")
+	if ok {
+		_ = conf.BindEnv("apiport", "PORT")
+	} else {
+		_ = conf.BindEnv("apiport", "SOCIAL_NETWORK_APIPORT")
+	}
+
 	_ = conf.BindEnv("dbtype", "SOCIAL_NETWORK_DBTYPE")
 	_ = conf.BindEnv("dbhost", "SOCIAL_NETWORK_DBHOST")
 	_ = conf.BindEnv("dbport", "SOCIAL_NETWORK_DBPORT")

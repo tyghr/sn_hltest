@@ -10,6 +10,7 @@ type Post struct {
 	UserName string    `db:"username" json:"username"`
 	Header   string    `db:"header" json:"header"`
 	Text     string    `db:"text" json:"text"`
+	Created  time.Time `db:"created" json:"created"`
 	Updated  time.Time `db:"updated" json:"updated"`
 }
 
@@ -34,4 +35,9 @@ func (p *PostFilter) Validate() error {
 	return validation.ValidateStruct(
 		p,
 	)
+}
+
+type PostBacket struct {
+	Post        Post     `json:"post"`
+	Subscribers []string `json:"subscribers"`
 }

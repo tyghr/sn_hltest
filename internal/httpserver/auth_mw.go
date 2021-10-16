@@ -57,7 +57,7 @@ func (s *Server) setSession(w http.ResponseWriter, userName string) {
 		"token":    sessionToken,
 	}
 
-	s.logger.Infof("renew cookie for %s: %s (%s)", userName, sessionToken, exp.Format(time.RFC3339))
+	s.logger.Debugf("renew cookie for %s: %s (%s)", userName, sessionToken, exp.Format(time.RFC3339))
 
 	if encoded, err := cookieHandler.Encode(cookieUserName, value); err == nil {
 		http.SetCookie(w, &http.Cookie{
@@ -125,7 +125,7 @@ func (s *Server) login() http.HandlerFunc {
 
 		pHash := sha256.Sum256([]byte(u.Password))
 
-		authOk, authErr := s.db.CheckAuth(ctx, u.UserName, pHash[:])
+		authOk, authErr := s.stor.DB().CheckAuth(ctx, u.UserName, pHash[:])
 		if authErr != nil || !authOk {
 			http.Redirect(w, r, "/login", http.StatusFound)
 			return

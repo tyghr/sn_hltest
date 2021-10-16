@@ -16,8 +16,8 @@ var (
 )
 
 type postPage struct {
-	Title    string
-	UserName string
+	Title        string
+	SelfUserName string
 }
 
 type post struct {
@@ -26,19 +26,21 @@ type post struct {
 	Text     string `schema:"text"`
 }
 
-func (s *Server) showEditPost() http.HandlerFunc {
+func (s *Server) showUpsertPost() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		//w.Header().Set("Content-Type", "application/json; charset=utf8")
 
-		// ctx, cancel := context.WithTimeout(r.Context(), timeoutDefault)
-		// defer cancel()
+		ctx, cancel := context.WithTimeout(r.Context(), timeoutDefault)
+		defer cancel()
 
-		s.logger.Debugf("showEditPost query received")
+		selfUserName := ctx.Value(ctxKeyUserName).(string)
+		s.logger.Debugw("showUpsertPost query received",
+			"user", selfUserName)
 
 		t := template.Must(template.New(path.Base(postTmpl)).ParseFiles(postTmpl))
 		err := t.Execute(w, postPage{
-			Title:    globalTitle,
-			UserName: "TODO",
+			Title:        globalTitle,
+			SelfUserName: selfUserName,
 		})
 		if err != nil {
 			s.logger.Errorf("failed render post edit template: %v", err)
@@ -46,7 +48,7 @@ func (s *Server) showEditPost() http.HandlerFunc {
 	}
 }
 
-func (s *Server) editPost() http.HandlerFunc {
+func (s *Server) upsertPost() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		//w.Header().Set("Content-Type", "application/json; charset=utf8")
 
@@ -67,12 +69,14 @@ func (s *Server) editPost() http.HandlerFunc {
 			return
 		}
 
-		s.logger.Debugf("editPost query received")
+		selfUserName := ctx.Value(ctxKeyUserName).(string)
+		s.logger.Debugf("upsertPost query received (%s)", selfUserName)
 
-		err = s.db.EditPost(ctx, model.Post{
-			UserName: p.UserName,
+		exist, err := s.stor.DB().UpsertPost(ctx, model.Post{
+			UserName: selfUserName,
 			Header:   p.Header,
 			Text:     p.Text,
+			Created:  time.Now(),
 			Updated:  time.Now(),
 		})
 		if err != nil {
@@ -80,8 +84,51 @@ func (s *Server) editPost() http.HandlerFunc {
 			return
 		}
 
-		// TODO show user page
-		s.respond(w, r, http.StatusOK, "ok")
+		// get subscribers (mysql)
+		subs, err := s.stor.DB().GetSubscribers(ctx, p.UserName)
+		if err != nil {
+			s.error(w, r, http.StatusInternalServerError, err)
+			return
+		}
+
+		subs = append(subs, selfUserName)
+
+		s.logger.Debugw("upsertPost GetSubscribers",
+			"user", selfUserName,
+			"subs", subs)
+
+		if !exist {
+			// create tasks in queue (batch) (rabbit)
+			err = s.stor.Q().AddPostBuckets(ctx, model.Post{
+				UserName: p.UserName,
+				Header:   p.Header,
+				Text:     p.Text,
+				Created:  time.Now(),
+				Updated:  time.Now(),
+			}, subs)
+			if err != nil {
+				s.error(w, r, http.StatusInternalServerError, err)
+				return
+			}
+		} else {
+			// set rebuild_flag in DB
+			err := s.stor.DB().SetFeedRebuildFlag(ctx, subs)
+			if err != nil {
+				s.error(w, r, http.StatusInternalServerError, err)
+				return
+			}
+
+			// add subs to rebuild queue (rabbit)
+			err = s.stor.Q().PostRebuildSubsFeedRequest(ctx, subs)
+			if err != nil {
+				s.error(w, r, http.StatusInternalServerError, err)
+				return
+			}
+		}
+
+		// .. processing queues
+
+		http.Redirect(w, r, "/user/"+selfUserName, http.StatusFound)
 	}
 }
 
@@ -106,9 +153,10 @@ func (s *Server) deletePost() http.HandlerFunc {
 			return
 		}
 
-		s.logger.Debugf("deletePost query received")
+		selfUserName := ctx.Value(ctxKeyUserName).(string)
+		s.logger.Debugf("deletePost query received (%s)", selfUserName)
 
-		err = s.db.DeletePost(ctx, model.Post{
+		err = s.stor.DB().DeletePost(ctx, model.Post{
 			UserName: p.UserName,
 			Header:   p.Header,
 		})
@@ -117,7 +165,33 @@ func (s *Server) deletePost() http.HandlerFunc {
 			return
 		}
 
-		// TODO show user page
-		s.respond(w, r, http.StatusOK, "ok")
+		// get subscribers (mysql)
+		subs, err := s.stor.DB().GetSubscribers(ctx, p.UserName)
+		if err != nil {
+			s.error(w, r, http.StatusInternalServerError, err)
+			return
+		}
+
+		subs = append(subs, selfUserName)
+
+		s.logger.Debugw("deletePost GetSubscribers",
+			"user", selfUserName,
+			"subs", subs)
+
+		// set rebuild_flag in DB
+		err = s.stor.DB().SetFeedRebuildFlag(ctx, subs)
+		if err != nil {
+			s.error(w, r, http.StatusInternalServerError, err)
+			return
+		}
+
+		// add subs to rebuild queue (rabbit)
+		err = s.stor.Q().PostRebuildSubsFeedRequest(ctx, subs)
+		if err != nil {
+			s.error(w, r, http.StatusInternalServerError, err)
+			return
+		}
+
+		http.Redirect(w, r, "/user/"+selfUserName, http.StatusFound)
 	}
 }

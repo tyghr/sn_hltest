@@ -1,0 +1,7 @@
+DROP TABLE IF EXISTS subscribers;
+DROP TABLE IF EXISTS friends;
+DROP TABLE IF EXISTS interests;
+DROP TABLE IF EXISTS d_interests;
+DROP TABLE IF EXISTS posts_idx_header_user;
+DROP TABLE IF EXISTS posts;
+DROP TABLE IF EXISTS users;

@@ -24,6 +24,15 @@ type DataBase interface {
 
 	SearchUser(ctx context.Context, filter model.UserFilter) ([]model.User, error)
 
-	EditPost(ctx context.Context, post model.Post) error
+	UpsertPost(ctx context.Context, post model.Post) (bool, error)
 	DeletePost(ctx context.Context, post model.Post) error
+
+	Subscribe(ctx context.Context, subscriber, subscribeTo string) error
+	Unsubscribe(ctx context.Context, subscriber, subscribeFrom string) error
+	GetSubscribers(ctx context.Context, user string) ([]string, error)
+
+	GetRelations(ctx context.Context, user, f_user string) (bool, bool, error)
+
+	SetFeedRebuildFlag(ctx context.Context, users []string) error
+	GetFeedRebuild(ctx context.Context, sub string) (bool, []model.Post, error)
 }

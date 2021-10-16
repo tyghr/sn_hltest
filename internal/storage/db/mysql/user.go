@@ -70,6 +70,54 @@ func (db *DB) GetProfile(ctx context.Context, username string) (model.User, erro
 	}
 	user.Friends = friends
 
+	// Subscriptions
+	subscriptions := []string{}
+	sqlQueryS := `SELECT DISTINCT(u.username) FROM subscribers s
+		LEFT JOIN users u ON s.user=u.id
+		WHERE s.subscriber=(SELECT id FROM users WHERE username=?)`
+	rowsS, err := db.QueryxContext(
+		ctx,
+		sqlQueryS,
+		user.UserName,
+	)
+	if err != nil {
+		return user, err
+	}
+	defer rowsS.Close()
+
+	for rowsS.Next() {
+		var s string
+		if err := rowsS.Scan(&s); err != nil {
+			return user, err
+		}
+		subscriptions = append(subscriptions, s)
+	}
+	user.Subscriptions = subscriptions
+
+	// Subscribers
+	subscribers := []string{}
+	sqlQueryS = `SELECT DISTINCT(u.username) FROM subscribers s
+		LEFT JOIN users u ON s.subscriber=u.id
+		WHERE s.user=(SELECT id FROM users WHERE username=?)`
+	rowsS2, err := db.QueryxContext(
+		ctx,
+		sqlQueryS,
+		user.UserName,
+	)
+	if err != nil {
+		return user, err
+	}
+	defer rowsS2.Close()
+
+	for rowsS2.Next() {
+		var s string
+		if err := rowsS2.Scan(&s); err != nil {
+			return user, err
+		}
+		subscribers = append(subscribers, s)
+	}
+	user.Subscribers = subscribers
+
 	return user, nil
 }
 

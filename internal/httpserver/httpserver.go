@@ -14,8 +14,10 @@ import (
 	"github.com/google/uuid"
 	"github.com/gorilla/handlers"
 	"github.com/gorilla/mux"
-	httpSwagger "github.com/swaggo/http-swagger"
+
 	// _ "github.com/tyghr/social_network/internal/api/docs"
+
+	httpSwagger "github.com/swaggo/http-swagger"
 )
 
 const (
@@ -31,16 +33,16 @@ var (
 type ctxKey int8
 
 type Server struct {
-	db     storage.DataBase
+	stor   *storage.Storage
 	router *mux.Router
 	conf   *config.Config
 	logger logger.Logger
 }
 
-func NewServer(db storage.DataBase, conf *config.Config, l logger.Logger) *Server {
+func NewServer(stor *storage.Storage, conf *config.Config, l logger.Logger) *Server {
 	s := &Server{
 		router: mux.NewRouter(),
-		db:     db,
+		stor:   stor,
 		conf:   conf,
 		logger: l,
 	}
@@ -67,39 +69,48 @@ func attachProfiler(router *mux.Router) {
 }
 
 func (s *Server) configureRouter() {
-	s.router.Use(s.setRequestID)
-	s.router.Use(s.logRequest)
 	s.router.Use(handlers.CORS(handlers.AllowedOrigins([]string{"*"})))
-
 	attachProfiler(s.router)
 
-	s.router.PathPrefix("/swagger/").Handler(httpSwagger.Handler(
+	swaggerRouter := s.router.PathPrefix("/swagger").Subrouter()
+	swaggerRouter.Path("/").Handler(httpSwagger.Handler(
 		httpSwagger.URL("/swagger/doc.json"), //The url pointing to API definition
 		httpSwagger.DeepLinking(true),
 		httpSwagger.DocExpansion("none"),
 		httpSwagger.DomID("#swagger-ui"),
 	))
 
-	s.router.HandleFunc("/", s.showIndex()).Methods(http.MethodGet)
+	wsRouter := s.router.PathPrefix("/ws").Subrouter()
+	wsRouter.HandleFunc("/feed", s.authSession(s.handleFeedWS()))
 
-	s.router.HandleFunc("/register", s.showRegister()).Methods(http.MethodGet)
-	s.router.HandleFunc("/register", s.register()).Methods(http.MethodPost)
-	s.router.HandleFunc("/search/user", s.searchUser()).Methods(http.MethodPost) // TMP
+	mainRouter := s.router.PathPrefix("/").Subrouter()
+	mainRouter.Use(s.setRequestID)
+	mainRouter.Use(s.logRequest)
 
-	s.router.HandleFunc("/logout", s.logout()).Methods(http.MethodPost)
-	s.router.HandleFunc("/login", s.login()).Methods(http.MethodPost)
-	s.router.HandleFunc("/login", s.showLogin()).Methods(http.MethodGet)
+	mainRouter.HandleFunc("/register", s.showRegister()).Methods(http.MethodGet)
+	mainRouter.HandleFunc("/register", s.register()).Methods(http.MethodPost)
 
-	s.router.HandleFunc("/post/edit", s.authSession(s.showEditPost())).Methods(http.MethodGet)
-	s.router.HandleFunc("/post/edit", s.authSession(s.editPost())).Methods(http.MethodPost)
-	s.router.HandleFunc("/post/delete", s.authSession(s.deletePost())).Methods(http.MethodPost)
+	mainRouter.HandleFunc("/logout", s.logout()).Methods(http.MethodPost)
+	mainRouter.HandleFunc("/login", s.login()).Methods(http.MethodPost)
+	mainRouter.HandleFunc("/login", s.showLogin()).Methods(http.MethodGet)
 
-	s.router.HandleFunc("/search/user", s.authSession(s.showSearchUser())).Methods(http.MethodGet)
-	// s.router.HandleFunc("/search/user", s.authSession(s.searchUser())).Methods(http.MethodPost)
+	mainRouter.HandleFunc("/post/edit", s.authSession(s.showUpsertPost())).Methods(http.MethodGet)
+	mainRouter.HandleFunc("/post/edit", s.authSession(s.upsertPost())).Methods(http.MethodPost)
+	mainRouter.HandleFunc("/post/delete", s.authSession(s.deletePost())).Methods(http.MethodPost)
 
-	s.router.HandleFunc("/user/{user}", s.authSession(s.showUserPage())).Methods(http.MethodGet)
-	s.router.HandleFunc("/user/{user}/profile", s.authSession(s.showProfile())).Methods(http.MethodGet)
-	s.router.HandleFunc("/user/{user}/add_to_friends", s.authSession(s.addFriend())).Methods(http.MethodPost)
+	mainRouter.HandleFunc("/search/user", s.authSession(s.showSearchUser())).Methods(http.MethodGet)
+	mainRouter.HandleFunc("/search/user", s.authSession(s.searchUser())).Methods(http.MethodPost)
+	// mainRouter.HandleFunc("/search/user", s.searchUser()).Methods(http.MethodPost) // TMP
+
+	mainRouter.HandleFunc("/user/{user}", s.authSession(s.showUserPage())).Methods(http.MethodGet)
+	mainRouter.HandleFunc("/user/{user}/profile", s.authSession(s.showProfile())).Methods(http.MethodGet)
+	mainRouter.HandleFunc("/user/{user}/add_to_friends", s.authSession(s.addFriend())).Methods(http.MethodPost)
+
+	mainRouter.HandleFunc("/user/{user}/subscribe", s.authSession(s.subscribe())).Methods(http.MethodPost)
+	mainRouter.HandleFunc("/user/{user}/unsubscribe", s.authSession(s.unsubscribe())).Methods(http.MethodPost)
+	mainRouter.HandleFunc("/feed", s.authSession(s.showFeedPage())).Methods(http.MethodGet)
+
+	mainRouter.HandleFunc("/", s.showIndex()).Methods(http.MethodGet)
 
 	http.Handle("/", s.router)
 }
@@ -114,13 +125,13 @@ func (s *Server) setRequestID(next http.Handler) http.Handler {
 
 func (s *Server) logRequest(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		s.logger.Infof("started %s %s remote_addr:%v request_id:%v", r.Method, r.RequestURI, r.RemoteAddr, r.Context().Value(ctxKeyRequestID))
+		s.logger.Debugf("started %s %s remote_addr:%v request_id:%v", r.Method, r.RequestURI, r.RemoteAddr, r.Context().Value(ctxKeyRequestID))
 
 		start := time.Now()
 		rw := &responseWriter{w, http.StatusOK}
 		next.ServeHTTP(rw, r)
 
-		s.logger.Infof(
+		s.logger.Debugf(
 			"completed with %d %s in %v. remote_addr:%v request_id:%v",
 			rw.code,
 			http.StatusText(rw.code),

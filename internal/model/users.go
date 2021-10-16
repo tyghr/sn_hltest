@@ -7,15 +7,18 @@ import (
 )
 
 type User struct {
-	UserName     string    `db:"username" json:"username"`
-	PasswordHash []byte    `db:"phash" json:"phash"`
-	Name         string    `db:"name" json:"name"`
-	SurName      string    `db:"surname" json:"surname"`
-	BirthDate    time.Time `db:"birthdate" json:"birthdate"`
-	Gender       bool      `db:"gender" json:"gender"`
-	City         string    `db:"city" json:"city"`
-	Interests    []string  `json:"interests"`
-	Friends      []string  `json:"friends"`
+	UserName      string    `db:"username" json:"username"`
+	PasswordHash  []byte    `db:"phash" json:"phash"`
+	Name          string    `db:"name" json:"name"`
+	SurName       string    `db:"surname" json:"surname"`
+	BirthDate     time.Time `db:"birthdate" json:"birthdate"`
+	Gender        bool      `db:"gender" json:"gender"`
+	City          string    `db:"city" json:"city"`
+	Interests     []string  `json:"interests"`
+	Friends       []string  `json:"friends"`
+	Subscriptions []string  `json:"subscriptions"`
+	Subscribers   []string  `json:"subscribers"`
+	Deleted       bool      `db:"deleted" json:"deleted"`
 }
 
 func (u *User) Validate() error {

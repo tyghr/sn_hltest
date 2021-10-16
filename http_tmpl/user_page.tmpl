@@ -2,27 +2,53 @@
 <html lang="en">
 <head>
 	<meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
-	<title>{{ .Title }}</title>
+	<title>{{.Title}}</title>
 </head>
 <body>
     <nav>
         <ul>
-            <li><a href="/search/user">Search user</a></li>
             <li>
-                <small>{{ .SelfUserName }}</small>
                 <form method="post" action="/logout">
-                    <button type="submit">Logout</button>
+                    <label for="logout">
+                        <a href="/user/{{.SelfUserName}}/profile">{{.SelfUserName}}</a>
+                    </label>
+                    <button type="submit" id="logout">Logout</button>
                 </form>
             </li>
+            {{if ne .SelfUserName .UserName}}
+                <li><a href="/user/{{.SelfUserName}}">Home</a></li>
+                <li>
+                    {{if not .IsFriend}}
+                        <form method="post" action="/user/{{.UserName}}/add_to_friends">
+                            <button type="submit">Add {{.UserName}} to friends</button>
+                        </form>
+                    {{else}}
+                        <div>{{.UserName}} is friend</div>
+                    {{end}}
+                </li>
+                <li>
+                    {{if not .Subscribed}}
+                        <form method="post" action="/user/{{.UserName}}/subscribe">
+                            <button type="submit">Subscribe to {{.UserName}}</button>
+                        </form>
+                    {{else}}
+                        <form method="post" action="/user/{{.UserName}}/unsubscribe">
+                            <button type="submit">Unsubscribe from {{.UserName}}</button>
+                        </form>
+                    {{end}}
+                </li>
+            {{end}}
+            <li><a href="/feed">Feed</a></li>
+            <li><a href="/search/user">Search user</a></li>
+            <li><a href="/post/edit">New post</a></li>
         </ul>
     </nav>
 	<div role="main">
-		<h1><a href="/user/{{ .UserName }}/profile">{{ .UserName }}</a> posts:</h1>
+        <h1><a href="/user/{{.UserName}}/profile">{{.UserName}}</a> posts:</h1>
 		<div>
             {{range .Posts}}
-                <div>{{ .Header }}}</div>
-                <div>{{ .Updated }}</div>
-                <div>{{ .Text }}</div>
+                <div><b>{{.Header}}</b> ({{.Updated.Format "02 Jan"}})</div>
+                <div>{{.Text}}</div>
 		    {{else}}
 			    <div>no posts</div>
             {{end}}

@@ -1,0 +1,162 @@
+version: '3.7'
+
+services:
+  sn_server:
+    build:
+      context: ../
+      dockerfile: infra/server.Dockerfile
+    container_name: sn_server
+    depends_on:
+      - mysql_node_1
+      - rabbit_node_1
+      - redis_node_5
+    environment:
+      SOCIAL_NETWORK_LOGLEVEL: -1
+      SOCIAL_NETWORK_APIPORT: 8080
+      SOCIAL_NETWORK_DBTYPE: mysql
+      SOCIAL_NETWORK_DBHOST: mysql_node_1
+      SOCIAL_NETWORK_DBPORT: 3306
+      SOCIAL_NETWORK_DBNAME: sntest
+      SOCIAL_NETWORK_DBUSER: testuser
+      SOCIAL_NETWORK_DBPASS: testpass
+      SOCIAL_NETWORK_QUEUETYPE: rabbitmq
+      SOCIAL_NETWORK_QUEUEHOST: rabbit_node_1
+      SOCIAL_NETWORK_QUEUEPORT: 5672
+      SOCIAL_NETWORK_QUEUEUSER: testuser
+      SOCIAL_NETWORK_QUEUEPASS: testpass
+      SOCIAL_NETWORK_CACHENODES: "redis_node_0:6379 redis_node_1:6379 redis_node_2:6379 redis_node_3:6379 redis_node_4:6379 redis_node_5:6379"
+      SOCIAL_NETWORK_CACHEPASS: testpass
+    ports:
+      - "80:8080"
+    networks:
+      - sn_network
+
+  mysql_node_1:
+    image: mysql
+    container_name: mysql_node_1
+    command: --default-authentication-plugin=mysql_native_password
+    # ports:
+    #   - '3306:3306'
+    environment:
+      MYSQL_ROOT_PASSWORD: secretpass
+      MYSQL_USER: testuser
+      MYSQL_PASSWORD: testpass
+      MYSQL_DATABASE: sntest
+    networks:
+      - sn_network
+
+  mysql_node_2:
+    image: mysql
+    container_name: mysql_node_2
+    command: --default-authentication-plugin=mysql_native_password
+    # ports:
+    #   - '3307:3306'
+    environment:
+      MYSQL_ROOT_PASSWORD: secretpass
+      MYSQL_USER: testuser
+      MYSQL_PASSWORD: testpass
+      MYSQL_DATABASE: sntest
+    networks:
+      - sn_network
+
+  mysql_node_3:
+    image: mysql
+    container_name: mysql_node_3
+    command: --default-authentication-plugin=mysql_native_password
+    # ports:
+    #   - '3308:3306'
+    environment:
+      MYSQL_ROOT_PASSWORD: secretpass
+      MYSQL_USER: testuser
+      MYSQL_PASSWORD: testpass
+      MYSQL_DATABASE: sntest
+    networks:
+      - sn_network
+
+  redis_node_0:
+    image: docker.io/bitnami/redis-cluster:6.2
+    container_name: redis_node_0
+    environment:
+      REDIS_PASSWORD: "testpass"
+      REDIS_NODES: "redis_node_0 redis_node_1 redis_node_2 redis_node_3 redis_node_4 redis_node_5"
+    networks:
+      - sn_network
+
+  redis_node_1:
+    image: docker.io/bitnami/redis-cluster:6.2
+    container_name: redis_node_1
+    environment:
+      REDIS_PASSWORD: "testpass"
+      REDIS_NODES: "redis_node_0 redis_node_1 redis_node_2 redis_node_3 redis_node_4 redis_node_5"
+    networks:
+      - sn_network
+
+  redis_node_2:
+    image: docker.io/bitnami/redis-cluster:6.2
+    container_name: redis_node_2
+    environment:
+      REDIS_PASSWORD: "testpass"
+      REDIS_NODES: "redis_node_0 redis_node_1 redis_node_2 redis_node_3 redis_node_4 redis_node_5"
+    networks:
+      - sn_network
+
+  redis_node_3:
+    image: docker.io/bitnami/redis-cluster:6.2
+    container_name: redis_node_3
+    environment:
+      REDIS_PASSWORD: "testpass"
+      REDIS_NODES: "redis_node_0 redis_node_1 redis_node_2 redis_node_3 redis_node_4 redis_node_5"
+    networks:
+      - sn_network
+
+  redis_node_4:
+    image: docker.io/bitnami/redis-cluster:6.2
+    container_name: redis_node_4
+    environment:
+      REDIS_PASSWORD: "testpass"
+      REDIS_NODES: "redis_node_0 redis_node_1 redis_node_2 redis_node_3 redis_node_4 redis_node_5"
+    networks:
+      - sn_network
+
+  redis_node_5:
+    image: docker.io/bitnami/redis-cluster:6.2
+    container_name: redis_node_5
+    depends_on:
+      - redis_node_0
+      - redis_node_1
+      - redis_node_2
+      - redis_node_3
+      - redis_node_4
+    environment:
+      REDIS_PASSWORD: "testpass"
+      REDISCLI_AUTH: "testpass"
+      REDIS_CLUSTER_REPLICAS: 1
+      REDIS_NODES: "redis_node_0 redis_node_1 redis_node_2 redis_node_3 redis_node_4 redis_node_5"
+      REDIS_CLUSTER_CREATOR: "yes"
+    networks:
+      - sn_network
+
+  rabbit_node_1:
+    image: docker.io/bitnami/rabbitmq:3.9
+    container_name: rabbit_node_1
+    # ports:
+    #   - '4369:4369'
+    #   - '5672:5672'
+    #   - '25672:25672'
+    #   - '15672:15672'
+    networks:
+      - sn_network
+    environment:
+      RABBITMQ_SECURE_PASSWORD: "yes"
+      RABBITMQ_USERNAME: "testuser"
+      RABBITMQ_PASSWORD: "testpass"
+#     volumes:
+#       - 'rabbitmq_data:/bitnami'
+# volumes:
+#   rabbitmq_data:
+#     driver: local
+
+networks:
+  sn_network:
+    name: sn_network
+    driver: bridge

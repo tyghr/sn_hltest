@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+	<title>{{.Title}}</title>
+    <script>
+        window.addEventListener("load", function(evt) {
+            var output = document.getElementById("output");
+            var ws;
+            if (!ws) {
+                ws = new WebSocket("{{.Addr}}",["{{.SecureProtocol}}", "{{.SelfUserName}}"]);
+            }
+
+            var updateFeed = function(message) {
+                var msg = JSON.parse(message)
+                if (msg.reset == 1) {
+                    output.innerHTML = "";
+                    return false;
+                }
+                var d = document.createElement("div");
+                d.innerHTML = '<div><b>'+msg.header+'</b>, <a href="/user/'+msg.username+'/profile">'+msg.username+'</a> ('+msg.updated+')</div><div>'+msg.text+'</div>';
+                output.insertBefore(d, output.firstChild);
+                output.scroll(0, output.scrollHeight);
+            };
+
+            ws.onopen = function(evt) {
+                ws.send("{{.SelfUserName}}");
+            }
+            ws.onclose = function(evt) {
+                ws = null;
+            }
+            ws.onmessage = function(evt) {
+                updateFeed(evt.data);
+            }
+            ws.onerror = function(evt) {
+                updateFeed("ERROR: " + evt.data)
+            }
+        });
+    </script>
+</head>
+<body>
+    <nav>
+        <ul>
+            <li>
+                <form method="post" action="/logout">
+                    <label for="logout">
+                        <a href="/user/{{.SelfUserName}}/profile">{{.SelfUserName}}</a>
+                    </label>
+                    <button type="submit" id="logout">Logout</button>
+                </form>
+            </li>
+            <li><a href="/user/{{.SelfUserName}}">Home</a></li>
+            <li><a href="/search/user">Search user</a></li>
+            <li><a href="/post/edit">New post</a></li>
+        </ul>
+    </nav>
+	<div role="main">
+	    <h1>{{.SelfUserName}} feed:</h1>
+        <div id="output" style="max-height: 70vh;overflow-y: scroll;"></div>
+	</div>
+</body>
+</html>

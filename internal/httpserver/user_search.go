@@ -2,6 +2,7 @@ package httpserver
 
 import (
 	"context"
+	"errors"
 	"html/template"
 	"net/http"
 	"path"
@@ -85,6 +86,12 @@ func (s *Server) searchUser() http.HandlerFunc {
 		ctx, cancel := context.WithTimeout(r.Context(), timeoutDefault)
 		defer cancel()
 
+		selfUserName, ok := ctx.Value(ctxKeyUserName).(string)
+		if !ok {
+			s.error(w, r, http.StatusUnauthorized, errors.New("username is empty"))
+			return
+		}
+
 		err := r.ParseForm()
 		if err != nil {
 			s.error(w, r, http.StatusBadRequest, err) //400
@@ -101,7 +108,7 @@ func (s *Server) searchUser() http.HandlerFunc {
 
 		s.logger.Debugf("searchUser query received")
 
-		users, err := s.db.SearchUser(ctx, model.UserFilter{
+		users, err := s.stor.DB().SearchUser(ctx, model.UserFilter{
 			UserName:      u.UserName,
 			Name:          u.Name,
 			SurName:       u.SurName,
@@ -119,11 +126,6 @@ func (s *Server) searchUser() http.HandlerFunc {
 		if err != nil {
 			s.error(w, r, http.StatusInternalServerError, err)
 			return
-		}
-
-		selfUserName, ok := ctx.Value(ctxKeyUserName).(string)
-		if !ok {
-			selfUserName = ""
 		}
 
 		foundUsers := []foundUser{}

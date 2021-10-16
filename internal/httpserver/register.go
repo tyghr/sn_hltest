@@ -99,7 +99,7 @@ func (s *Server) register() http.HandlerFunc {
 			}
 		}
 
-		err = s.db.Register(ctx, model.User{
+		err = s.stor.DB().Register(ctx, model.User{
 			UserName:     u.UserName,
 			PasswordHash: pHash[:],
 			Name:         u.Name,

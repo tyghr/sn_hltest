@@ -4,11 +4,11 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/jmoiron/sqlx"
-
 	_ "github.com/go-sql-driver/mysql"
+	"github.com/jmoiron/sqlx"
 	"github.com/tyghr/logger"
 	"github.com/tyghr/social_network/internal/config"
+	"github.com/tyghr/social_network/internal/storage"
 )
 
 type DB struct {
@@ -16,14 +16,32 @@ type DB struct {
 	logger logger.Logger
 }
 
-func OpenConn(conf *config.Config, l logger.Logger) (*DB, error) {
-	db, err := sqlx.Connect("mysql", fmt.Sprintf("%s:%s@tcp(%s:%d)/%s?parseTime=true", conf.DBuser, conf.DBpass, conf.DBhost, conf.DBport, conf.DBname))
+func connect(dbUrl string) (db *sqlx.DB, err error) {
+	for i := 0; i < 10; i++ {
+		db, err = sqlx.Connect("mysql", dbUrl)
+		if err == nil {
+			return
+		}
+		time.Sleep(2 * time.Second)
+	}
+	return
+}
+
+func OpenConn(conf *config.Config, l logger.Logger) (storage.DataBase, error) {
+	dbUrl := fmt.Sprintf("%s:%s@tcp(%s:%d)/%s?parseTime=true", conf.DBuser, conf.DBpass, conf.DBhost, conf.DBport, conf.DBname)
+	db, err := connect(dbUrl)
 	if err != nil {
 		return nil, err
 	}
 	db.SetConnMaxLifetime(time.Minute * 3)
 	db.SetMaxOpenConns(10)
 	db.SetMaxIdleConns(10)
+
+	err = runMigrations(conf, l)
+	if err != nil {
+		return nil, err
+	}
+
 	return &DB{
 		DB:     db,
 		logger: l,

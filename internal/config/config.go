@@ -1,13 +1,13 @@
 package config
 
 import (
-	"github.com/spf13/pflag"
 	"github.com/spf13/viper"
 )
 
 const (
 	TestMock = "testmock"
 	DBMysql  = "mysql"
+	MQRabbit = "rabbitmq"
 )
 
 type Config struct {
@@ -15,14 +15,23 @@ type Config struct {
 	// ConfigName string
 	// ConfigType string
 	// ConfigPath string
-	LogLevel int
-	ApiPort  int
-	DBtype   string
-	DBhost   string
-	DBport   int
-	DBname   string
-	DBuser   string
-	DBpass   string
+	LogLevel        int
+	ApiPort         int
+	DBtype          string
+	DBhost          string
+	DBport          int
+	DBname          string
+	DBuser          string
+	DBpass          string
+	DBMigrationPath string
+	QueueType       string
+	QueueHost       string
+	QueuePort       int
+	QueueUser       string
+	QueuePass       string
+
+	CacheNodes []string
+	CachePass  string
 }
 
 func NewConfig() *Config {
@@ -31,55 +40,48 @@ func NewConfig() *Config {
 		// ConfigName: "config",
 		// ConfigType: "json",
 		// ConfigPath: "./", // change in prod to "/etc/social_network/"
-		LogLevel: -1,
-		ApiPort:  80,
-		DBtype:   DBMysql,
-		DBhost:   "localhost",
-		DBport:   3306,
-		DBname:   "sntest",
-		DBuser:   "testuser",
-		DBpass:   "testpass",
-	}
-}
+		LogLevel:        -1,
+		ApiPort:         80,
+		DBtype:          DBMysql,
+		DBhost:          "localhost",
+		DBport:          3306,
+		DBname:          "sntest",
+		DBuser:          "testuser",
+		DBpass:          "testpass",
+		DBMigrationPath: "/opt/snserver/migrations/mysql",
 
-func init() {
-	// pflag.String("config", "", "config file path")
-	pflag.Int("loglevel", 0, "debug level (debug:-1 .. fatal:5)")
-	pflag.Int("apiport", 0, "API port")
-	pflag.String("dbtype", "", "DB type")
-	pflag.String("dbhost", "", "DB host")
-	pflag.String("dbport", "", "DB port")
-	pflag.String("dbname", "", "DB name")
-	pflag.String("dbuser", "", "DB user")
-	pflag.String("dbpass", "", "DB pass")
+		QueueType: MQRabbit,
+		QueueHost: "127.0.0.1",
+		QueuePort: 5672,
+		QueueUser: "testuser",
+		QueuePass: "testpass",
+
+		CacheNodes: []string{"redis_node_0:6379", "redis_node_1:6379", "redis_node_2:6379", "redis_node_3:6379", "redis_node_4:6379", "redis_node_5:6379"},
+		CachePass:  "testpass",
+	}
 }
 
 func (conf *Config) bindAllEnv() {
 	_ = conf.BindEnv("loglevel", "SOCIAL_NETWORK_LOGLEVEL")
-	_ = conf.BindEnv("apiport", "PORT") // SOCIAL_NETWORK_APIPORT
+	_ = conf.BindEnv("apiport", "SOCIAL_NETWORK_APIPORT")
 	_ = conf.BindEnv("dbtype", "SOCIAL_NETWORK_DBTYPE")
 	_ = conf.BindEnv("dbhost", "SOCIAL_NETWORK_DBHOST")
 	_ = conf.BindEnv("dbport", "SOCIAL_NETWORK_DBPORT")
 	_ = conf.BindEnv("dbname", "SOCIAL_NETWORK_DBNAME")
 	_ = conf.BindEnv("dbuser", "SOCIAL_NETWORK_DBUSER")
 	_ = conf.BindEnv("dbpass", "SOCIAL_NETWORK_DBPASS")
-}
 
-func (conf *Config) bindAllFlags() {
-	pflag.Parse()
-	// _ = conf.BindPFlag("config", pflag.Lookup("config"))
-	_ = conf.BindPFlag("apiport", pflag.Lookup("apiport"))
-	_ = conf.BindPFlag("loglevel", pflag.Lookup("loglevel"))
-	_ = conf.BindPFlag("dbtype", pflag.Lookup("dbtype"))
-	_ = conf.BindPFlag("dbhost", pflag.Lookup("dbhost"))
-	_ = conf.BindPFlag("dbport", pflag.Lookup("dbport"))
-	_ = conf.BindPFlag("dbname", pflag.Lookup("dbname"))
-	_ = conf.BindPFlag("dbuser", pflag.Lookup("dbuser"))
-	_ = conf.BindPFlag("dbpass", pflag.Lookup("dbpass"))
+	_ = conf.BindEnv("queuetype", "SOCIAL_NETWORK_QUEUETYPE")
+	_ = conf.BindEnv("queuehost", "SOCIAL_NETWORK_QUEUEHOST")
+	_ = conf.BindEnv("queueport", "SOCIAL_NETWORK_QUEUEPORT")
+	_ = conf.BindEnv("queueuser", "SOCIAL_NETWORK_QUEUEUSER")
+	_ = conf.BindEnv("queuepass", "SOCIAL_NETWORK_QUEUEPASS")
+
+	_ = conf.BindEnv("cachenodes", "SOCIAL_NETWORK_CACHENODES")
+	_ = conf.BindEnv("cachepass", "SOCIAL_NETWORK_CACHEPASS")
 }
 
 func (conf *Config) setDefaults() {
-	// conf.SetDefault("config", fmt.Sprintf("%s/%s.%s", strings.TrimSuffix(conf.ConfigPath, "/"), conf.ConfigName, conf.ConfigType))
 	conf.SetDefault("apiport", conf.ApiPort)
 	conf.SetDefault("loglevel", conf.LogLevel)
 	conf.SetDefault("dbtype", conf.DBtype)
@@ -88,6 +90,16 @@ func (conf *Config) setDefaults() {
 	conf.SetDefault("dbname", conf.DBname)
 	conf.SetDefault("dbuser", conf.DBuser)
 	conf.SetDefault("dbpass", conf.DBpass)
+	conf.SetDefault("dbmigrationpath", conf.DBMigrationPath)
+
+	conf.SetDefault("queuetype", conf.QueueType)
+	conf.SetDefault("queuehost", conf.QueueHost)
+	conf.SetDefault("queueport", conf.QueuePort)
+	conf.SetDefault("queueuser", conf.QueueUser)
+	conf.SetDefault("queuepass", conf.QueuePass)
+
+	conf.SetDefault("cachenodes", conf.CacheNodes)
+	conf.SetDefault("cachepass", conf.CachePass)
 }
 
 //ReadSettings ...
@@ -101,36 +113,26 @@ func (conf *Config) setDefaults() {
 func (conf *Config) ReadAllSettings() error {
 	conf.setDefaults()
 	conf.bindAllEnv()
-	conf.bindAllFlags()
-
-	// flagConfig := conf.GetString("config")
-	// if flagConfig != "" {
-	// 	conf.ConfigPath = path.Dir(flagConfig)
-	// 	conf.ConfigType = strings.TrimPrefix(path.Ext(flagConfig), ".")
-	// 	if conf.ConfigType != "" {
-	// 		conf.ConfigName = strings.TrimSuffix(path.Base(flagConfig), "."+conf.ConfigType)
-	// 	} else {
-	// 		conf.ConfigName = path.Base(flagConfig)
-	// 	}
-	// }
-
-	// conf.SetConfigName(conf.ConfigName) // read config
-	// conf.SetConfigType(conf.ConfigType)
-	// conf.AddConfigPath(conf.ConfigPath)
-	// if err := conf.ReadInConfig(); err != nil {
-	// 	if errW := conf.WriteConfigAs(fmt.Sprintf("%s/%s.%s", conf.ConfigPath, conf.ConfigName, conf.ConfigType)); errW != nil {
-	// 		return err
-	// 	}
-	// }
 
 	conf.ApiPort = conf.GetInt("apiport")
 	conf.LogLevel = conf.GetInt("loglevel")
+
 	conf.DBtype = conf.GetString("dbtype")
 	conf.DBhost = conf.GetString("dbhost")
 	conf.DBport = conf.GetInt("dbport")
 	conf.DBname = conf.GetString("dbname")
 	conf.DBuser = conf.GetString("dbuser")
 	conf.DBpass = conf.GetString("dbpass")
+	conf.DBMigrationPath = conf.GetString("dbmigrationpath")
+
+	conf.QueueType = conf.GetString("queuetype")
+	conf.QueueHost = conf.GetString("queuehost")
+	conf.QueuePort = conf.GetInt("queueport")
+	conf.QueueUser = conf.GetString("queueuser")
+	conf.QueuePass = conf.GetString("queuepass")
+
+	conf.CacheNodes = conf.GetStringSlice("cachenodes")
+	conf.CachePass = conf.GetString("cachepass")
 
 	return nil
 }

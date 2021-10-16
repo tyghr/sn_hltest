@@ -70,7 +70,7 @@ func main() {
 	go func() {
 		defer close(done)
 		defer close(msgs)
-		for i := 0; i < 10_000; i++ {
+		for i := 0; i < 10000; i++ {
 			msgs <- fmt.Sprintf("msg %d", time.Now().Nanosecond())
 		}
 	}()

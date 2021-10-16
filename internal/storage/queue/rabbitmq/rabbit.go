@@ -46,15 +46,23 @@ func New(conf *config.Config, lgr logger.Logger) storage.Queue {
 		logger: lgr,
 	}
 
-	var url string
+	var scheme string
 	switch conf.QueueType {
 	case config.MQRabbit:
-		url = fmt.Sprintf("amqp://%s:%s@%s:%d/%s", conf.QueueUser, conf.QueuePass, conf.QueueHost, conf.QueuePort, conf.QueueVHost)
+		scheme = "amqp"
 	case config.MQRabbitSecured:
-		url = fmt.Sprintf("amqps://%s:%s@%s:%d/%s", conf.QueueUser, conf.QueuePass, conf.QueueHost, conf.QueuePort, conf.QueueVHost)
+		scheme = "amqps"
 	default:
 		q.logger.Fatalw("unknown queue type")
 	}
+	var host string
+	if conf.QueuePort == 0 {
+		host = conf.QueueHost
+	} else {
+		host = fmt.Sprintf("%s:%d", conf.QueueHost, conf.QueuePort)
+	}
+
+	url := fmt.Sprintf("%s://%s:%s@%s/%s", scheme, conf.QueueUser, conf.QueuePass, host, conf.QueueVHost)
 
 	q.logger.Debugw("connecting to rabbitmq...")
 	conn, err := connect(url)

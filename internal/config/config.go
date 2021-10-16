@@ -29,9 +29,11 @@ type Config struct {
 	QueuePort       int
 	QueueUser       string
 	QueuePass       string
+	QueueVHost      string
 
-	CacheNodes []string
-	CachePass  string
+	CacheNodes     []string
+	CachePass      string
+	CacheClustered bool
 }
 
 func NewConfig() *Config {
@@ -48,16 +50,18 @@ func NewConfig() *Config {
 		DBname:          "sntest",
 		DBuser:          "testuser",
 		DBpass:          "testpass",
-		DBMigrationPath: "/opt/snserver/migrations/mysql",
+		DBMigrationPath: "migpath",
 
-		QueueType: MQRabbit,
-		QueueHost: "127.0.0.1",
-		QueuePort: 5672,
-		QueueUser: "testuser",
-		QueuePass: "testpass",
+		QueueType:  MQRabbit,
+		QueueHost:  "127.0.0.1",
+		QueuePort:  5672,
+		QueueUser:  "testuser",
+		QueuePass:  "testpass",
+		QueueVHost: "",
 
-		CacheNodes: []string{"redis_node_0:6379", "redis_node_1:6379", "redis_node_2:6379", "redis_node_3:6379", "redis_node_4:6379", "redis_node_5:6379"},
-		CachePass:  "testpass",
+		CacheNodes:     []string{"redis_node_0:6379", "redis_node_1:6379", "redis_node_2:6379", "redis_node_3:6379", "redis_node_4:6379", "redis_node_5:6379"},
+		CachePass:      "testpass",
+		CacheClustered: false,
 	}
 }
 
@@ -77,9 +81,11 @@ func (conf *Config) bindAllEnv() {
 	_ = conf.BindEnv("queueport", "SOCIAL_NETWORK_QUEUEPORT")
 	_ = conf.BindEnv("queueuser", "SOCIAL_NETWORK_QUEUEUSER")
 	_ = conf.BindEnv("queuepass", "SOCIAL_NETWORK_QUEUEPASS")
+	_ = conf.BindEnv("queuevhost", "SOCIAL_NETWORK_QUEUEVHOST")
 
 	_ = conf.BindEnv("cachenodes", "SOCIAL_NETWORK_CACHENODES")
 	_ = conf.BindEnv("cachepass", "SOCIAL_NETWORK_CACHEPASS")
+	_ = conf.BindEnv("cacheclustered", "SOCIAL_NETWORK_CACHECLUSTERED")
 }
 
 func (conf *Config) setDefaults() {
@@ -98,9 +104,11 @@ func (conf *Config) setDefaults() {
 	conf.SetDefault("queueport", conf.QueuePort)
 	conf.SetDefault("queueuser", conf.QueueUser)
 	conf.SetDefault("queuepass", conf.QueuePass)
+	conf.SetDefault("queuevhost", conf.QueueVHost)
 
 	conf.SetDefault("cachenodes", conf.CacheNodes)
 	conf.SetDefault("cachepass", conf.CachePass)
+	conf.SetDefault("cacheclustered", conf.CacheClustered)
 }
 
 //ReadSettings ...
@@ -131,9 +139,11 @@ func (conf *Config) ReadAllSettings() error {
 	conf.QueuePort = conf.GetInt("queueport")
 	conf.QueueUser = conf.GetString("queueuser")
 	conf.QueuePass = conf.GetString("queuepass")
+	conf.QueueVHost = conf.GetString("queuevhost")
 
 	conf.CacheNodes = conf.GetStringSlice("cachenodes")
 	conf.CachePass = conf.GetString("cachepass")
+	conf.CacheClustered = conf.GetBool("cacheclustered")
 
 	return nil
 }

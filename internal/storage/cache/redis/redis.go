@@ -15,16 +15,32 @@ var (
 	maxFeedLen int64 = 1000
 )
 
+type redisConn interface {
+	redis.Cmdable
+	Watch(context.Context, func(tx *redis.Tx) error, ...string) error
+}
+
 type Cache struct {
-	rc     *redis.ClusterClient
+	rc     redisConn
 	logger logger.Logger
 }
 
-func New(nodes []string, password string, l logger.Logger) storage.Cache {
-	c := redis.NewClusterClient(&redis.ClusterOptions{
-		Addrs:    nodes,
-		Password: password,
-	})
+func New(nodes []string, isCluster bool, password string, l logger.Logger) storage.Cache {
+	var c redisConn
+	if isCluster {
+		c = redis.NewClusterClient(&redis.ClusterOptions{
+			Addrs:    nodes,
+			Password: password,
+		})
+	} else {
+		if len(nodes) == 0 {
+			l.Fatalw("redis nodelist empty")
+		}
+		c = redis.NewClient(&redis.Options{
+			Addr:     nodes[0],
+			Password: password,
+		})
+	}
 
 	l.Debugw("redis create conn", "nodes", nodes)
 

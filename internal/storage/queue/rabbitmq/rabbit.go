@@ -41,7 +41,7 @@ func cutStringSlice(s []string) [][]string {
 }
 
 func New(conf *config.Config, lgr logger.Logger) storage.Queue {
-	url := fmt.Sprintf("amqp://%s:%s@%s:%d/", conf.QueueUser, conf.QueuePass, conf.QueueHost, conf.QueuePort)
+	url := fmt.Sprintf("amqp://%s:%s@%s:%d/%s", conf.QueueUser, conf.QueuePass, conf.QueueHost, conf.QueuePort, conf.QueueVHost)
 	q := &Queue{
 		config: conf,
 		logger: lgr,

@@ -19,6 +19,7 @@ services:
       SOCIAL_NETWORK_DBNAME: sntest
       SOCIAL_NETWORK_DBUSER: testuser
       SOCIAL_NETWORK_DBPASS: testpass
+      SOCIAL_NETWORK_DBMIGRATIONPATH: "/opt/snserver/migrations/mysql"
       SOCIAL_NETWORK_QUEUETYPE: rabbitmq
       SOCIAL_NETWORK_QUEUEHOST: rabbit_node_1
       SOCIAL_NETWORK_QUEUEPORT: 5672
@@ -26,6 +27,7 @@ services:
       SOCIAL_NETWORK_QUEUEPASS: testpass
       SOCIAL_NETWORK_CACHENODES: "redis_node_0:6379 redis_node_1:6379 redis_node_2:6379 redis_node_3:6379 redis_node_4:6379 redis_node_5:6379"
       SOCIAL_NETWORK_CACHEPASS: testpass
+      SOCIAL_NETWORK_CACHECLUSTERED: true
     ports:
       - "80:8080"
     networks:

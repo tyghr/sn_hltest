@@ -37,7 +37,7 @@ func main() {
 		lgr.Fatal(err)
 	}
 	queue := rabbitmq.New(conf, lgr)
-	cache := redis.New(conf.CacheNodes, conf.CachePass, lgr)
+	cache := redis.New(conf.CacheNodes, conf.CacheClustered, conf.CachePass, lgr)
 	stor := storage.New(db, queue, cache)
 
 	// "append" queue processing

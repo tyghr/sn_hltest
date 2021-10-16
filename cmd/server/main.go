@@ -30,7 +30,7 @@ func main() {
 		panic(err)
 	}
 
-	lgr := logger.NewLogger(conf.LogLevel, logger.ColoredConsoleLogger)
+	lgr := logger.NewLogger(conf.LogLevel, logger.ServiceLogger)
 
 	db, err := mysql.OpenConn(conf, lgr)
 	if err != nil {

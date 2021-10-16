@@ -41,17 +41,25 @@ func cutStringSlice(s []string) [][]string {
 }
 
 func New(conf *config.Config, lgr logger.Logger) storage.Queue {
-	url := fmt.Sprintf("amqp://%s:%s@%s:%d/%s", conf.QueueUser, conf.QueuePass, conf.QueueHost, conf.QueuePort, conf.QueueVHost)
 	q := &Queue{
 		config: conf,
 		logger: lgr,
 	}
 
+	var url string
+	switch conf.QueueType {
+	case config.MQRabbit:
+		url = fmt.Sprintf("amqp://%s:%s@%s:%d/%s", conf.QueueUser, conf.QueuePass, conf.QueueHost, conf.QueuePort, conf.QueueVHost)
+	case config.MQRabbitSecured:
+		url = fmt.Sprintf("amqps://%s:%s@%s:%d/%s", conf.QueueUser, conf.QueuePass, conf.QueueHost, conf.QueuePort, conf.QueueVHost)
+	default:
+		q.logger.Fatalw("unknown queue type")
+	}
+
 	q.logger.Debugw("connecting to rabbitmq...")
 	conn, err := connect(url)
 	if err != nil {
-		q.logger.Errorw("connection to rabbitmq failed", "error", err)
-		return nil
+		q.logger.Fatalw("connection to rabbitmq failed", "error", err)
 	}
 
 	q.conn = conn

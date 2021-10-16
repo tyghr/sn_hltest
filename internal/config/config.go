@@ -5,9 +5,10 @@ import (
 )
 
 const (
-	TestMock = "testmock"
-	DBMysql  = "mysql"
-	MQRabbit = "rabbitmq"
+	TestMock        = "testmock"
+	DBMysql         = "mysql"
+	MQRabbit        = "rabbitmq"
+	MQRabbitSecured = "rabbitmq_secured"
 )
 
 type Config struct {

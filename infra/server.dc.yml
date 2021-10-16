@@ -27,7 +27,7 @@ services:
       SOCIAL_NETWORK_QUEUEPASS: testpass
       SOCIAL_NETWORK_CACHENODES: "redis_node_0:6379 redis_node_1:6379 redis_node_2:6379 redis_node_3:6379 redis_node_4:6379 redis_node_5:6379"
       SOCIAL_NETWORK_CACHEPASS: testpass
-      SOCIAL_NETWORK_CACHECLUSTERED: true
+      SOCIAL_NETWORK_CACHECLUSTERED: "true"
     ports:
       - "80:8080"
     networks:

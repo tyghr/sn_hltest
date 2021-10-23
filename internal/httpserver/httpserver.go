@@ -1,17 +1,16 @@
 package httpserver
 
 import (
-	"context"
 	"encoding/json"
 	"net/http"
 	"net/http/pprof"
+	"sync"
 	"time"
 
 	"github.com/tyghr/logger"
 	"github.com/tyghr/social_network/internal/config"
 	"github.com/tyghr/social_network/internal/storage"
 
-	"github.com/google/uuid"
 	"github.com/gorilla/handlers"
 	"github.com/gorilla/mux"
 
@@ -26,8 +25,9 @@ const (
 )
 
 var (
-	timeoutDefault = 30 * time.Second
-	globalTitle    = "Social network"
+	timeoutDefault       = 30 * time.Second
+	globalTitle          = "Social network"
+	wsSecureProtocolType = "SPTI"
 )
 
 type ctxKey int8
@@ -37,6 +37,9 @@ type Server struct {
 	router *mux.Router
 	conf   *config.Config
 	logger logger.Logger
+
+	reqIDs map[string]struct{}
+	rlock  *sync.Mutex
 }
 
 func NewServer(stor *storage.Storage, conf *config.Config, l logger.Logger) *Server {
@@ -45,6 +48,8 @@ func NewServer(stor *storage.Storage, conf *config.Config, l logger.Logger) *Ser
 		stor:   stor,
 		conf:   conf,
 		logger: l,
+		reqIDs: make(map[string]struct{}),
+		rlock:  &sync.Mutex{},
 	}
 	s.configureRouter()
 
@@ -84,7 +89,7 @@ func (s *Server) configureRouter() {
 	wsRouter.HandleFunc("/feed", s.authSession(s.handleFeedWS()))
 
 	mainRouter := s.router.PathPrefix("/").Subrouter()
-	mainRouter.Use(s.setRequestID)
+	mainRouter.Use(s.setRequestIDHandler)
 	mainRouter.Use(s.logRequest)
 
 	mainRouter.HandleFunc("/register", s.showRegister()).Methods(http.MethodGet)
@@ -110,17 +115,13 @@ func (s *Server) configureRouter() {
 	mainRouter.HandleFunc("/user/{user}/unsubscribe", s.authSession(s.unsubscribe())).Methods(http.MethodPost)
 	mainRouter.HandleFunc("/feed", s.authSession(s.showFeedPage())).Methods(http.MethodGet)
 
+	mainRouter.HandleFunc("/chat/{user}", s.authSession(s.handleChatHome())).Methods(http.MethodGet)
+
+	mainRouter.HandleFunc("/session_validate", s.checkRequestIDHandler()).Methods(http.MethodPost)
+
 	mainRouter.HandleFunc("/", s.showIndex()).Methods(http.MethodGet)
 
 	http.Handle("/", s.router)
-}
-
-func (s *Server) setRequestID(next http.Handler) http.Handler {
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		id := uuid.New().String()
-		w.Header().Set("X-Request-ID", id)
-		next.ServeHTTP(w, r.WithContext(context.WithValue(r.Context(), ctxKeyRequestID, id)))
-	})
 }
 
 func (s *Server) logRequest(next http.Handler) http.Handler {

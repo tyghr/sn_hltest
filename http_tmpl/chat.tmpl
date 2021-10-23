@@ -1,74 +1,70 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-    <meta charset="utf-8">
+	<meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+    <title>{{.Title}}</title>
     <script>
         window.addEventListener("load", function(evt) {
-
             var output = document.getElementById("output");
             var input = document.getElementById("input");
             var ws;
+            if (!ws) {
+                ws = new WebSocket("{{.Addr}}",["{{.SecureProtocol}}", "{{.UserToken}}"]);
+            }
 
-            var print = function(message) {
+            var updateChat = function(message) {
+                var msg = JSON.parse(message);
                 var d = document.createElement("div");
-                d.textContent = message;
+                d.innerHTML = '<div><b>'+msg.user+'</b>: '+msg.text+'</div>';
                 output.appendChild(d);
                 output.scroll(0, output.scrollHeight);
             };
 
-            document.getElementById("open").onclick = function(evt) {
-                if (ws) {
-                    return false;
-                }
-                ws = new WebSocket("{{.Addr}}",["{{.SecureProtocol}}", ut.value]);
-                ws.onopen = function(evt) {
-                    ws.send(ut.value);
-                    print("OPEN");
-                }
-                ws.onclose = function(evt) {
-                    print("CLOSE");
-                    ws = null;
-                }
-                ws.onmessage = function(evt) {
-                    {{/* print("RESPONSE: " + evt.data); */}}
-                    print("MSG " + evt.data);
-                }
-                ws.onerror = function(evt) {
-                    print("ERROR: " + evt.data);
-                }
-                return false;
-            };
+            ws.onopen = function(evt) {
+                ws.send("{{.UserToken}}");
+            }
+            ws.onclose = function(evt) {
+                ws = null;
+            }
+            ws.onmessage = function(evt) {
+                updateChat(evt.data);
+            }
+            ws.onerror = function(evt) {
+                console.log("ERROR: " + evt.data);
+            }
 
             document.getElementById("send").onclick = function(evt) {
                 if (!ws) {
                     return false;
                 }
-                {{/* print("SEND: " + input.value); */}}
                 ws.send(input.value);
-                return false;
-            };
-
-            document.getElementById("close").onclick = function(evt) {
-                if (!ws) {
-                    return false;
-                }
-                ws.close();
                 return false;
             };
         });
     </script>
 </head>
 <body>
+    <nav>
+        <ul>
+            <li>
+                <form method="post" action="/logout">
+                    <label for="logout">
+                        <a href="/user/{{.SelfUserName}}/profile">{{.SelfUserName}}</a>
+                    </label>
+                    <button type="submit" id="logout">Logout</button>
+                </form>
+            </li>
+            <li><a href="/user/{{.SelfUserName}}">Home</a></li>
+            <li><a href="/feed">Feed</a></li>
+            <li><a href="/search/user">Search user</a></li>
+            <li><a href="/post/edit">New post</a></li>
+        </ul>
+    </nav>
+    <h1>{{.SelfUserName}}</h1>
     <table>
         <tr>
             <td valign="top" width="50%">
-                <p>Click "Open" to create a connection to the server, "Send" to send a message to the server and "Close" to close the connection.<p>
                 <form>
-                    <p>
-                        <input id="ut" type="text" value="user">
-                        <button id="open">Open</button>
-                        <button id="close">Close</button>
-                    </p>
                     <p>
                         <input id="input" type="text" value="msg">
                         <button id="send">Send</button>

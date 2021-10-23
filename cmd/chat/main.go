@@ -2,30 +2,40 @@ package main
 
 import (
 	"fmt"
-	"log"
 	"net/http"
+	"os"
+	"time"
 
+	"github.com/tyghr/logger"
+	config "github.com/tyghr/social_network/internal/config/chat"
 	httpChat "github.com/tyghr/social_network/internal/httpserver/chat"
-	redisChat "github.com/tyghr/social_network/internal/storage/chat"
-)
-
-var (
-	listenPort    = 8080
-	redisNodes    = []string{"redis_node_0:6379", "redis_node_1:6379", "redis_node_2:6379", "redis_node_3:6379", "redis_node_4:6379", "redis_node_5:6379"}
-	redisPassword = "bitnami"
+	redisChat "github.com/tyghr/social_network/internal/storage/cache/redis/chat"
 )
 
 func main() {
-	log.SetFlags(log.LstdFlags | log.Lshortfile)
+	if tz := os.Getenv("TZ"); tz != "" {
+		var err error
+		time.Local, err = time.LoadLocation(tz)
+		if err != nil {
+			panic(err)
+		}
+	}
 
-	chat := httpChat.Init(
-		redisChat.Init(redisNodes, redisPassword),
-	)
-	log.Println("start listening...")
+	conf := config.NewConfig()
+	if err := conf.ReadAllSettings(); err != nil {
+		panic(err)
+	}
+
+	lgr := logger.NewLogger(conf.LogLevel, logger.ServiceLogger)
+
+	cache := redisChat.New(conf.CacheNodes, conf.CacheClustered, conf.CachePass, lgr)
+
+	chat := httpChat.NewChatServer(cache, conf, lgr)
+	lgr.Debug("start listening...")
 	if err := http.ListenAndServe(
-		fmt.Sprintf("0.0.0.0:%d", listenPort),
+		fmt.Sprintf("0.0.0.0:%d", conf.ApiPort),
 		chat,
 	); err != nil {
-		log.Fatal(err)
+		lgr.Fatal(err)
 	}
 }

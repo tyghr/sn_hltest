@@ -1,11 +1,13 @@
 package chat
 
 import (
+	"bytes"
 	"context"
+	"encoding/base64"
 	"encoding/json"
 	"fmt"
-	"log"
 	"net/http"
+	"time"
 
 	"github.com/gorilla/websocket"
 )
@@ -13,31 +15,92 @@ import (
 var (
 	upgrader = websocket.Upgrader{
 		Subprotocols: []string{wsSecureProtocolType},
+		CheckOrigin: func(r *http.Request) bool {
+			return true
+		},
 	}
 )
 
-func getUserToken(c *websocket.Conn, protocols []string) (string, error) {
-	var userToken string
+func (chat *Chat) checkToken(d []byte) (string, error) {
+	var userToken struct {
+		Username  string `json:"username"`
+		RequestID string `json:"request_id"`
+	}
+
+	data, err := base64.URLEncoding.DecodeString(string(d))
+	if err != nil {
+		return "", err
+	}
+
+	err = json.Unmarshal(data, &userToken)
+	if err != nil {
+		return "", err
+	}
+
+	httpClient := &http.Client{
+		Timeout: time.Second * 5,
+	}
+	defer httpClient.CloseIdleConnections()
+
+	req, err := http.NewRequest(http.MethodPost, chat.conf.SessionValidateUrl, bytes.NewBuffer(d))
+	if err != nil {
+		return "", err
+	}
+	req.Header.Set("Content-Type", "application/json")
+
+	resp, err := httpClient.Do(req)
+	if err != nil {
+		return "", err
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		return "", fmt.Errorf("status is not ok")
+	}
+
+	decoder := json.NewDecoder(resp.Body)
+	var tokenValid bool
+	err = decoder.Decode(&tokenValid)
+	if err != nil {
+		return "", err
+	}
+	if !tokenValid {
+		return "", fmt.Errorf("token is not valid")
+	}
+
+	return userToken.Username, nil
+}
+
+func (chat *Chat) getUserID(c *websocket.Conn, protocols []string) (string, error) {
+	var userTokenData []byte
 
 	// log.Print("ws client protocols:", strings.Join(protocols, " "))
 	// log.Print("selected protocol:", c.Subprotocol())
 	if len(protocols) > 1 {
-		userToken = protocols[1]
+		userTokenData = []byte(protocols[1])
 	}
 
 	// reading first message, which is token
 	_, firstMsgToken, err := c.ReadMessage()
 	if err != nil {
-		return userToken, fmt.Errorf("first_message_token: %w", err)
+		u, errToken := chat.checkToken(userTokenData)
+		if errToken != nil {
+			return "", errToken
+		}
+		return u, fmt.Errorf("first_message_token: %w", err)
 	}
 	// this check is not neccessary, actually
 	// we check token from first message and from protocol list
-	if string(firstMsgToken) != "" && string(firstMsgToken) != userToken {
-		userToken = string(firstMsgToken)
-		log.Print("tokens differ")
+	if string(firstMsgToken) != "" && string(firstMsgToken) != string(userTokenData) {
+		userTokenData = firstMsgToken
+		chat.logger.Debugw("tokens differ")
 	}
 
-	return userToken, nil
+	u, err := chat.checkToken(userTokenData)
+	if err != nil {
+		return "", err
+	}
+	return u, nil
 }
 
 func (chat *Chat) readingMessages(c *websocket.Conn, chatID, userToken string) func() error {
@@ -49,21 +112,35 @@ func (chat *Chat) readingMessages(c *websocket.Conn, chatID, userToken string) f
 		// at first, we fill the window by old messages
 		for _, msg := range oldMsgs {
 			//time: msg.ID
-			msgUser := msg.Value("user")
-			msgText := msg.Value("text")
 
-			log.Printf("read from redis oldmsg: %s: %s", msgUser, msgText)
+			m := struct {
+				User string `json:"user"`
+				Text string `json:"text"`
+			}{
+				User: msg.Value("user").(string),
+				Text: msg.Value("text").(string),
+			}
+			b, _ := json.Marshal(m)
 
-			err := c.WriteMessage(websocket.TextMessage, []byte(
-				fmt.Sprintf("FROM %s: %s", msgUser, msgText),
-			))
+			chat.logger.Debugw("read from redis oldmsg",
+				"user", m.User,
+				"text,", m.Text,
+			)
+
+			err := c.WriteMessage(websocket.TextMessage, []byte(b))
 			if err != nil {
-				log.Println("write oldmsg:", err)
+				chat.logger.Errorw("write oldmsg", "error", err)
 				break
 			}
-			log.Printf("send to ws oldmsg: %s: %s", msgUser, msgText)
+			chat.logger.Debugw("send to ws oldmsg",
+				"user", m.User,
+				"text,", m.Text,
+			)
 		}
-		log.Printf("done reading oldmsgs: %s: %s", chatID, userToken)
+		chat.logger.Debugw("done reading oldmsgs",
+			"chatID", chatID,
+			"userToken,", userToken,
+		)
 
 		// next, we reading channel of online messages
 		for msg := range ch {
@@ -71,20 +148,28 @@ func (chat *Chat) readingMessages(c *websocket.Conn, chatID, userToken string) f
 				User string `json:"user"`
 				Text string `json:"text"`
 			}{}
-			_ = json.Unmarshal([]byte(msg.Message()), &m)
+			b := []byte(msg.Message())
+			_ = json.Unmarshal(b, &m)
 
-			log.Printf("read from redis online: %s: %s", m.User, m.Text)
+			chat.logger.Debugw("read from redis online",
+				"user", m.User,
+				"text,", m.Text,
+			)
 
-			err := c.WriteMessage(websocket.TextMessage, []byte(
-				fmt.Sprintf("FROM %s: %s", m.User, m.Text),
-			))
+			err := c.WriteMessage(websocket.TextMessage, []byte(b))
 			if err != nil {
-				log.Println("write online:", err)
+				chat.logger.Errorw("write online", "error", err)
 				break
 			}
-			log.Printf("send to ws online: %s: %s", m.User, m.Text)
+			chat.logger.Debugw("send to ws online",
+				"user", m.User,
+				"text,", m.Text,
+			)
 		}
-		log.Printf("stop watching redis: %s: %s", chatID, userToken)
+		chat.logger.Debugw("stop watching redis",
+			"chatID", chatID,
+			"userToken,", userToken,
+		)
 	}()
 
 	return chClose
@@ -94,10 +179,14 @@ func (chat *Chat) writingMessages(c *websocket.Conn, chatID, userToken string) {
 	for {
 		_, message, err := c.ReadMessage()
 		if err != nil {
-			log.Println("read:", err)
+			chat.logger.Errorw("read", "error", err)
 			break
 		}
-		log.Printf("recv from ws: %s: %s: %s", chatID, userToken, message)
+		chat.logger.Debugw("recv from ws",
+			"chat_id", chatID,
+			"user_token", userToken,
+			"message", message,
+		)
 
 		err = chat.store.WriteMessage(
 			context.TODO(),
@@ -106,18 +195,22 @@ func (chat *Chat) writingMessages(c *websocket.Conn, chatID, userToken string) {
 			string(message),
 		)
 		if err != nil {
-			log.Println("store:", err)
+			chat.logger.Errorw("store", "error", err)
 			break
 		}
 
-		log.Printf("write to redis: %s: %s: %s", chatID, userToken, message)
+		chat.logger.Debugw("write to redis",
+			"chat_id", chatID,
+			"user_token", userToken,
+			"message", message,
+		)
 	}
 }
 
 func (chat *Chat) handleChatWS(w http.ResponseWriter, r *http.Request) {
 	c, err := upgrader.Upgrade(w, r, nil)
 	if err != nil {
-		log.Print("upgrade:", err)
+		chat.logger.Errorw("upgrade", "error", err)
 		return
 	}
 	defer c.Close()
@@ -128,13 +221,16 @@ func (chat *Chat) handleChatWS(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	userToken, err := getUserToken(c, websocket.Subprotocols(r))
+	userToken, err := chat.getUserID(c, websocket.Subprotocols(r))
 	if err != nil {
-		log.Println("getUserToken:", err)
+		chat.logger.Errorw("getUserToken", "error", err)
 	}
 
 	// debug info
-	log.Printf("channel_info: %s: %s", chatID, userToken)
+	chat.logger.Debugw("channel_info",
+		"chat_id", chatID,
+		"user_token", userToken,
+	)
 
 	// reading msgs part. readingMessages is non-blocking func
 	chClose := chat.readingMessages(c, chatID, userToken)
@@ -145,5 +241,8 @@ func (chat *Chat) handleChatWS(w http.ResponseWriter, r *http.Request) {
 	// write msgs part. writingMessages is blocking func
 	chat.writingMessages(c, chatID, userToken)
 
-	log.Printf("stop watching ws: %s: %s", chatID, userToken)
+	chat.logger.Debugw("stop watching ws",
+		"chat_id", chatID,
+		"user_token", userToken,
+	)
 }

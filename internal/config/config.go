@@ -11,6 +11,7 @@ const (
 	DBMysql         = "mysql"
 	MQRabbit        = "rabbitmq"
 	MQRabbitSecured = "rabbitmq_secured"
+	CacheRedis      = "redis"
 )
 
 type Config struct {
@@ -18,8 +19,10 @@ type Config struct {
 	// ConfigName string
 	// ConfigType string
 	// ConfigPath string
-	LogLevel        int
-	ApiPort         int
+	LogLevel int
+	ApiPort  int
+	ChatUrl  string
+
 	DBtype          string
 	DBhost          string
 	DBport          int
@@ -27,13 +30,15 @@ type Config struct {
 	DBuser          string
 	DBpass          string
 	DBMigrationPath string
-	QueueType       string
-	QueueHost       string
-	QueuePort       int
-	QueueUser       string
-	QueuePass       string
-	QueueVHost      string
 
+	QueueType  string
+	QueueHost  string
+	QueuePort  int
+	QueueUser  string
+	QueuePass  string
+	QueueVHost string
+
+	CacheType      string
 	CacheNodes     []string
 	CachePass      string
 	CacheClustered bool
@@ -45,8 +50,10 @@ func NewConfig() *Config {
 		// ConfigName: "config",
 		// ConfigType: "json",
 		// ConfigPath: "./", // change in prod to "/etc/social_network/"
-		LogLevel:        -1,
-		ApiPort:         80,
+		LogLevel: -1,
+		ApiPort:  80,
+		ChatUrl:  "ws://127.0.0.1:8090/ws/chat",
+
 		DBtype:          DBMysql,
 		DBhost:          "localhost",
 		DBport:          3306,
@@ -62,6 +69,7 @@ func NewConfig() *Config {
 		QueuePass:  "testpass",
 		QueueVHost: "",
 
+		CacheType:      CacheRedis,
 		CacheNodes:     []string{"redis_node_0:6379", "redis_node_1:6379", "redis_node_2:6379", "redis_node_3:6379", "redis_node_4:6379", "redis_node_5:6379"},
 		CachePass:      "testpass",
 		CacheClustered: false,
@@ -77,6 +85,7 @@ func (conf *Config) bindAllEnv() {
 	} else {
 		_ = conf.BindEnv("apiport", "SOCIAL_NETWORK_APIPORT")
 	}
+	_ = conf.BindEnv("chat_url", "SOCIAL_NETWORK_CHAT_URL")
 
 	_ = conf.BindEnv("dbtype", "SOCIAL_NETWORK_DBTYPE")
 	_ = conf.BindEnv("dbhost", "SOCIAL_NETWORK_DBHOST")
@@ -93,6 +102,7 @@ func (conf *Config) bindAllEnv() {
 	_ = conf.BindEnv("queuepass", "SOCIAL_NETWORK_QUEUEPASS")
 	_ = conf.BindEnv("queuevhost", "SOCIAL_NETWORK_QUEUEVHOST")
 
+	_ = conf.BindEnv("cachetype", "SOCIAL_NETWORK_CACHETYPE")
 	_ = conf.BindEnv("cachenodes", "SOCIAL_NETWORK_CACHENODES")
 	_ = conf.BindEnv("cachepass", "SOCIAL_NETWORK_CACHEPASS")
 	_ = conf.BindEnv("cacheclustered", "SOCIAL_NETWORK_CACHECLUSTERED")
@@ -101,6 +111,8 @@ func (conf *Config) bindAllEnv() {
 func (conf *Config) setDefaults() {
 	conf.SetDefault("apiport", conf.ApiPort)
 	conf.SetDefault("loglevel", conf.LogLevel)
+	conf.SetDefault("chat_url", conf.ChatUrl)
+
 	conf.SetDefault("dbtype", conf.DBtype)
 	conf.SetDefault("dbhost", conf.DBhost)
 	conf.SetDefault("dbport", conf.DBport)
@@ -116,6 +128,7 @@ func (conf *Config) setDefaults() {
 	conf.SetDefault("queuepass", conf.QueuePass)
 	conf.SetDefault("queuevhost", conf.QueueVHost)
 
+	conf.SetDefault("cachetype", conf.CacheType)
 	conf.SetDefault("cachenodes", conf.CacheNodes)
 	conf.SetDefault("cachepass", conf.CachePass)
 	conf.SetDefault("cacheclustered", conf.CacheClustered)
@@ -135,6 +148,7 @@ func (conf *Config) ReadAllSettings() error {
 
 	conf.ApiPort = conf.GetInt("apiport")
 	conf.LogLevel = conf.GetInt("loglevel")
+	conf.ChatUrl = conf.GetString("chat_url")
 
 	conf.DBtype = conf.GetString("dbtype")
 	conf.DBhost = conf.GetString("dbhost")
@@ -151,6 +165,7 @@ func (conf *Config) ReadAllSettings() error {
 	conf.QueuePass = conf.GetString("queuepass")
 	conf.QueueVHost = conf.GetString("queuevhost")
 
+	conf.CacheType = conf.GetString("cachetype")
 	conf.CacheNodes = conf.GetStringSlice("cachenodes")
 	conf.CachePass = conf.GetString("cachepass")
 	conf.CacheClustered = conf.GetBool("cacheclustered")

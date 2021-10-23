@@ -13,6 +13,7 @@ services:
     environment:
       SOCIAL_NETWORK_LOGLEVEL: -1
       SOCIAL_NETWORK_APIPORT: 8080
+      SOCIAL_NETWORK_CHAT_URL: "ws://127.0.0.1:8090/ws/chat"
       SOCIAL_NETWORK_DBTYPE: mysql
       SOCIAL_NETWORK_DBHOST: mysql_node_1
       SOCIAL_NETWORK_DBPORT: 3306
@@ -25,11 +26,32 @@ services:
       SOCIAL_NETWORK_QUEUEPORT: 5672
       SOCIAL_NETWORK_QUEUEUSER: testuser
       SOCIAL_NETWORK_QUEUEPASS: testpass
+      SOCIAL_NETWORK_CACHETYPE: "redis"
       SOCIAL_NETWORK_CACHENODES: "redis_node_0:6379 redis_node_1:6379 redis_node_2:6379 redis_node_3:6379 redis_node_4:6379 redis_node_5:6379"
       SOCIAL_NETWORK_CACHEPASS: testpass
       SOCIAL_NETWORK_CACHECLUSTERED: "true"
     ports:
       - "80:8080"
+    networks:
+      - sn_network
+
+  sn_chat:
+    build:
+      context: ../
+      dockerfile: infra/chat.Dockerfile
+    container_name: sn_chat
+    depends_on:
+      - redis_node_5
+    environment:
+      SOCIAL_NETWORK_LOGLEVEL: -1
+      SOCIAL_NETWORK_APIPORT: 8090
+      SOCIAL_NETWORK_SESSION_VALIDATE_URL: "http://sn_server:8080/session_validate"
+      SOCIAL_NETWORK_CACHETYPE: "redis"
+      SOCIAL_NETWORK_CACHENODES: "redis_node_0:6379 redis_node_1:6379 redis_node_2:6379 redis_node_3:6379 redis_node_4:6379 redis_node_5:6379"
+      SOCIAL_NETWORK_CACHEPASS: testpass
+      SOCIAL_NETWORK_CACHECLUSTERED: "true"
+    ports:
+      - "8090:8090"
     networks:
       - sn_network
 

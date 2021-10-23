@@ -13,9 +13,8 @@ import (
 )
 
 var (
-	feedPageTmpl         = "http_tmpl/feed_page.tmpl"
-	wsSecureProtocolType = "SPTI"
-	wsFeedAddrTemplate   = "ws://%s/ws/feed"
+	feedPageTmpl       = "http_tmpl/feed_page.tmpl"
+	wsFeedAddrTemplate = "ws://%s/ws/feed"
 )
 
 type feedPage struct {
@@ -28,8 +27,9 @@ type feedPage struct {
 func (s *Server) showFeedPage() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		//w.Header().Set("Content-Type", "application/json; charset=utf8")
-		ctx, cancel := context.WithTimeout(r.Context(), timeoutDefault)
-		defer cancel()
+		// ctx, cancel := context.WithTimeout(r.Context(), timeoutDefault)
+		// defer cancel()
+		ctx := r.Context()
 
 		ok, u := getUserSession(r)
 		if !ok || u == "" {

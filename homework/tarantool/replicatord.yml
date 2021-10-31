@@ -1,0 +1,23 @@
+mysql:
+    host: replicator_mysql
+    port: 3306
+    user: root
+    password: secretpass
+    connect_retry: 15 # seconds
+
+tarantool:
+    host: replicator_tarantool:3302
+    binlog_pos_space: 512
+    binlog_pos_key: 0
+    connect_retry: 15 # seconds
+    sync_retry: 1000 # milliseconds
+
+mappings:
+    - database: sntest
+      table: users
+      columns: [ id, username, surname, city ]
+      space: 513
+      key_fields:  [ 0 ]
+      # insert_call: function_name
+      # update_call: function_name
+      # delete_call: function_name

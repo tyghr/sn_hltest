@@ -1,0 +1,46 @@
+version: '3.7'
+
+services:
+  replicator_tool:
+    build:
+      context: ./
+      dockerfile: replicator.Dockerfile
+    container_name: replicator_tool
+    volumes:
+      - ./replicatord.yml:/usr/local/etc/replicatord.yml
+    depends_on:
+      - replicator_mysql
+      - replicator_tarantool
+    networks:
+      - sn_network
+
+  replicator_mysql:
+    image: mysql:5.7
+    container_name: replicator_mysql
+    command: --default-authentication-plugin=mysql_native_password
+    ports:
+      - '3306:3306'
+    environment:
+      MYSQL_ROOT_PASSWORD: secretpass
+      MYSQL_USER: testuser
+      MYSQL_PASSWORD: testpass
+      MYSQL_DATABASE: sntest
+    networks:
+      - sn_network
+
+  replicator_tarantool:
+    image: tarantool/tarantool
+    container_name: replicator_tarantool
+    ports:
+      - '3301:3301'
+      - '3302:3302'
+    environment:
+      TARANTOOL_USER_NAME: testuser
+      TARANTOOL_USER_PASSWORD: testpass
+    networks:
+      - sn_network
+
+networks:
+  sn_network:
+    name: sn_network
+    driver: bridge

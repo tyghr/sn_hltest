@@ -8,7 +8,7 @@ import (
 	"github.com/tyghr/social_network/internal/model"
 )
 
-func (q *Queue) ReadPostAppendBuckets(ctx context.Context) (<-chan model.PostBacket, error) {
+func (q *Queue) ReadPostAppendBuckets(ctx context.Context) (<-chan model.PostBucket, error) {
 	ch, err := q.conn.Channel()
 	if err != nil {
 		q.logger.Errorw("connection to rabbitmq failed", "error", err)
@@ -46,10 +46,10 @@ func (q *Queue) ReadPostAppendBuckets(ctx context.Context) (<-chan model.PostBac
 		return nil, err
 	}
 
-	posts := make(chan model.PostBacket)
+	posts := make(chan model.PostBucket)
 	go func() {
 		for d := range deliveries {
-			var pb model.PostBacket
+			var pb model.PostBucket
 			err := json.Unmarshal(d.Body, &pb)
 			if err != nil {
 				q.logger.Errorw("ConsumePosts: unmarshaling", "error", err)

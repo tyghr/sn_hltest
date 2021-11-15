@@ -32,7 +32,7 @@ func (q *Queue) AddPostBuckets(ctx context.Context, post model.Post, subs []stri
 		"subs", subs)
 
 	for _, cutSubs := range cutStringSlice(subs) {
-		jsonMsg, err := json.Marshal(model.PostBacket{
+		jsonMsg, err := json.Marshal(model.PostBucket{
 			Post:        post,
 			Subscribers: cutSubs,
 		})

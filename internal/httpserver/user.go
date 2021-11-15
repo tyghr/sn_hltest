@@ -93,6 +93,13 @@ func (s *Server) showUserPage() http.HandlerFunc {
 		if err != nil {
 			s.logger.Errorf("failed render user page template: %v", err)
 		}
+
+		// reset cursor_counter (rabbit)
+		err = s.stor.Q().UpdateCursorCounter(ctx, selfUserName)
+		if err != nil {
+			s.error(w, r, http.StatusInternalServerError, err)
+			return
+		}
 	}
 }
 

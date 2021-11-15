@@ -15,8 +15,12 @@ type Queue interface {
 	Close()
 
 	AddPostBuckets(ctx context.Context, post model.Post, subs []string) error
-	ReadPostAppendBuckets(ctx context.Context) (<-chan model.PostBacket, error)
+	ReadPostAppendBuckets(ctx context.Context) (<-chan model.PostBucket, error)
 
 	PostRebuildSubsFeedRequest(ctx context.Context, subs []string) error
 	ReadFeedRebuild(ctx context.Context) (<-chan string, error)
+
+	IncTotalCounters(ctx context.Context, subs []string) error
+	IncCursorCounters(ctx context.Context, subs []string) error
+	UpdateCursorCounter(ctx context.Context, user string) error
 }

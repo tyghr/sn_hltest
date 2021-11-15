@@ -110,6 +110,14 @@ func (s *Server) upsertPost() http.HandlerFunc {
 				s.error(w, r, http.StatusInternalServerError, err)
 				return
 			}
+
+			// inc total_counters (rabbit)
+			err = s.stor.Q().IncTotalCounters(ctx, subs)
+			if err != nil {
+				s.error(w, r, http.StatusInternalServerError, err)
+				return
+			}
+
 		} else {
 			// set rebuild_flag in DB
 			err := s.stor.DB().SetFeedRebuildFlag(ctx, subs)
@@ -177,6 +185,13 @@ func (s *Server) deletePost() http.HandlerFunc {
 		s.logger.Debugw("deletePost GetSubscribers",
 			"user", selfUserName,
 			"subs", subs)
+
+		// inc cursor_counters (rabbit)
+		err = s.stor.Q().IncCursorCounters(ctx, subs)
+		if err != nil {
+			s.error(w, r, http.StatusInternalServerError, err)
+			return
+		}
 
 		// set rebuild_flag in DB
 		err = s.stor.DB().SetFeedRebuildFlag(ctx, subs)

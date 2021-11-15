@@ -11,9 +11,10 @@ import (
 )
 
 var (
-	backetLen    = 100
-	queueAppend  = "appendpost"
-	queueRebuild = "rebuild_feed"
+	bucketLen     = 100
+	queueAppend   = "appendpost"
+	queueRebuild  = "rebuild_feed"
+	queueCounters = "counters"
 )
 
 type Queue struct {
@@ -34,10 +35,10 @@ func connect(url string) (conn *amqp.Connection, err error) {
 }
 
 func cutStringSlice(s []string) [][]string {
-	if len(s) <= backetLen {
+	if len(s) <= bucketLen {
 		return [][]string{s}
 	}
-	return append([][]string{s[:backetLen]}, cutStringSlice(s[backetLen:])...)
+	return append([][]string{s[:bucketLen]}, cutStringSlice(s[bucketLen:])...)
 }
 
 func New(conf *config.Config, lgr logger.Logger) storage.Queue {

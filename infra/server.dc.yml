@@ -35,6 +35,31 @@ services:
     networks:
       - sn_network
 
+  sn_counters:
+    build:
+      context: ../
+      dockerfile: infra/counters.Dockerfile
+    container_name: sn_counters
+    depends_on:
+      - rabbit_node_1
+      - redis_node_5
+    environment:
+      SOCIAL_NETWORK_LOGLEVEL: -1
+      SOCIAL_NETWORK_APIPORT: 8070
+      SOCIAL_NETWORK_QUEUETYPE: rabbitmq
+      SOCIAL_NETWORK_QUEUEHOST: rabbit_node_1
+      SOCIAL_NETWORK_QUEUEPORT: 5672
+      SOCIAL_NETWORK_QUEUEUSER: testuser
+      SOCIAL_NETWORK_QUEUEPASS: testpass
+      SOCIAL_NETWORK_CACHETYPE: "redis"
+      SOCIAL_NETWORK_CACHENODES: "redis_node_0:6379 redis_node_1:6379 redis_node_2:6379 redis_node_3:6379 redis_node_4:6379 redis_node_5:6379"
+      SOCIAL_NETWORK_CACHEPASS: testpass
+      SOCIAL_NETWORK_CACHECLUSTERED: "true"
+    ports:
+      - "8070:8070"
+    networks:
+      - sn_network
+
   sn_chat:
     build:
       context: ../

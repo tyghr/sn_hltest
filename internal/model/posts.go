@@ -37,7 +37,7 @@ func (p *PostFilter) Validate() error {
 	)
 }
 
-type PostBacket struct {
+type PostBucket struct {
 	Post        Post     `json:"post"`
 	Subscribers []string `json:"subscribers"`
 }

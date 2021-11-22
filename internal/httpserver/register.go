@@ -3,9 +3,7 @@ package httpserver
 import (
 	"context"
 	"crypto/sha256"
-	"html/template"
 	"net/http"
-	"path"
 	"reflect"
 	"strings"
 	"time"
@@ -15,7 +13,7 @@ import (
 )
 
 var (
-	registerTmpl = "http_tmpl/register.tmpl"
+	registerTmpl = "register.tmpl"
 )
 
 type registerPage struct {
@@ -50,7 +48,7 @@ func (s *Server) showRegister() http.HandlerFunc {
 
 		s.logger.Debugf("showRegister query received")
 
-		t := template.Must(template.New(path.Base(registerTmpl)).ParseFiles(registerTmpl))
+		t := s.getHtmlTemplate(registerTmpl)
 		err := t.Execute(w, registerPage{
 			Title: globalTitle,
 		})

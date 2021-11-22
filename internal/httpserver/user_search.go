@@ -3,9 +3,7 @@ package httpserver
 import (
 	"context"
 	"errors"
-	"html/template"
 	"net/http"
-	"path"
 	"time"
 
 	"github.com/gorilla/schema"
@@ -13,7 +11,7 @@ import (
 )
 
 var (
-	userSearchTmpl = "http_tmpl/user_search.tmpl"
+	userSearchTmpl = "user_search.tmpl"
 )
 
 type searchUserPage struct {
@@ -68,7 +66,7 @@ func (s *Server) showSearchUser() http.HandlerFunc {
 
 		selfUserName := ctx.Value(ctxKeyUserName).(string)
 
-		t := template.Must(template.New(path.Base(userSearchTmpl)).ParseFiles(userSearchTmpl))
+		t := s.getHtmlTemplate(userSearchTmpl)
 		err := t.Execute(w, searchUserPage{
 			Title:        globalTitle,
 			SelfUserName: selfUserName,
@@ -145,7 +143,7 @@ func (s *Server) searchUser() http.HandlerFunc {
 			})
 		}
 
-		t := template.Must(template.New(path.Base(userSearchTmpl)).ParseFiles(userSearchTmpl))
+		t := s.getHtmlTemplate(userSearchTmpl)
 		err = t.Execute(w, searchUserPage{
 			Title:         globalTitle,
 			SelfUserName:  selfUserName,

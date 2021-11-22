@@ -2,8 +2,11 @@ package httpserver
 
 import (
 	"encoding/json"
+	"fmt"
+	"html/template"
 	"net/http"
 	"net/http/pprof"
+	"path"
 	"sync"
 	"time"
 
@@ -119,6 +122,10 @@ func (s *Server) configureRouter() {
 
 	mainRouter.HandleFunc("/session_validate", s.checkRequestIDHandler()).Methods(http.MethodPost)
 
+	mainRouter.HandleFunc("/health_check", func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusOK)
+	}).Methods(http.MethodGet)
+
 	mainRouter.HandleFunc("/", s.showIndex()).Methods(http.MethodGet)
 
 	http.Handle("/", s.router)
@@ -157,4 +164,8 @@ func (s *Server) respond(w http.ResponseWriter, r *http.Request, code int, data 
 	if data != nil {
 		_ = json.NewEncoder(w).Encode(data)
 	}
+}
+
+func (s *Server) getHtmlTemplate(tmpl string) *template.Template {
+	return template.Must(template.New(path.Base(tmpl)).ParseFiles(fmt.Sprintf("%s/%s", s.conf.HtmlTemplatesPath, tmpl)))
 }

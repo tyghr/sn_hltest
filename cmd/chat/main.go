@@ -8,6 +8,7 @@ import (
 
 	"github.com/tyghr/logger"
 	config "github.com/tyghr/social_network/internal/config/chat"
+	consul "github.com/tyghr/social_network/internal/consul/agent"
 	httpChat "github.com/tyghr/social_network/internal/httpserver/chat"
 	redisChat "github.com/tyghr/social_network/internal/storage/cache/redis/chat"
 )
@@ -27,6 +28,24 @@ func main() {
 	}
 
 	lgr := logger.NewLogger(conf.LogLevel, logger.ServiceLogger)
+
+	// consul part
+	consulClient, err := consul.NewClient(conf)
+	if err != nil {
+		lgr.Fatal(err)
+	}
+
+	if err = consulClient.Register(); err != nil {
+		lgr.Fatal(err)
+	}
+
+	defer func() {
+		if err = consulClient.Deregister(); err != nil {
+			lgr.Fatal(err)
+		}
+
+		lgr.Debug("service auth deregister in consul")
+	}()
 
 	cache := redisChat.New(conf.CacheNodes, conf.CacheClustered, conf.CachePass, lgr)
 

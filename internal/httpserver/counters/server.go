@@ -48,6 +48,10 @@ func NewCountersServer(stor *storage.CountersStorage, conf *config.Config, l log
 
 	srv.router.HandleFunc("/counter/{user}", srv.handleGetCounter()).Methods(http.MethodGet)
 
+	srv.router.HandleFunc("/health_check", func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusOK)
+	}).Methods(http.MethodGet)
+
 	http.Handle("/", srv.router)
 
 	return srv

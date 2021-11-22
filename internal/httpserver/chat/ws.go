@@ -13,7 +13,8 @@ import (
 )
 
 var (
-	upgrader = websocket.Upgrader{
+	wsSecureProtocolType = "SPTI"
+	upgrader             = websocket.Upgrader{
 		Subprotocols: []string{wsSecureProtocolType},
 		CheckOrigin: func(r *http.Request) bool {
 			return true

@@ -4,16 +4,14 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"html/template"
 	"net/http"
-	"path"
 	"time"
 
 	"github.com/gorilla/websocket"
 )
 
 var (
-	feedPageTmpl       = "http_tmpl/feed_page.tmpl"
+	feedPageTmpl       = "feed_page.tmpl"
 	wsFeedAddrTemplate = "ws://%s/ws/feed"
 )
 
@@ -40,7 +38,7 @@ func (s *Server) showFeedPage() http.HandlerFunc {
 		selfUserName := ctx.Value(ctxKeyUserName).(string)
 		s.logger.Debugf("showFeedPage query received (%s)", selfUserName)
 
-		t := template.Must(template.New(path.Base(feedPageTmpl)).ParseFiles(feedPageTmpl))
+		t := s.getHtmlTemplate(feedPageTmpl)
 		err := t.Execute(w, feedPage{
 			Addr:           fmt.Sprintf(wsFeedAddrTemplate, r.Host),
 			SecureProtocol: wsSecureProtocolType,

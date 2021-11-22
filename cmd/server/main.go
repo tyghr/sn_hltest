@@ -9,6 +9,7 @@ import (
 
 	"github.com/tyghr/logger"
 	"github.com/tyghr/social_network/internal/config"
+	consul "github.com/tyghr/social_network/internal/consul/agent"
 	"github.com/tyghr/social_network/internal/httpserver"
 	"github.com/tyghr/social_network/internal/storage"
 	"github.com/tyghr/social_network/internal/storage/cache/redis"
@@ -31,6 +32,24 @@ func main() {
 	}
 
 	lgr := logger.NewLogger(conf.LogLevel, logger.ServiceLogger)
+
+	// consul part
+	consulClient, err := consul.NewClient(conf)
+	if err != nil {
+		lgr.Fatal(err)
+	}
+
+	if err = consulClient.Register(); err != nil {
+		lgr.Fatal(err)
+	}
+
+	defer func() {
+		if err = consulClient.Deregister(); err != nil {
+			lgr.Fatal(err)
+		}
+
+		lgr.Debug("service auth deregister in consul")
+	}()
 
 	db, err := mysql.OpenConn(conf, lgr)
 	if err != nil {

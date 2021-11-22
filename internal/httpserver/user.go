@@ -3,9 +3,7 @@ package httpserver
 import (
 	"context"
 	"errors"
-	"html/template"
 	"net/http"
-	"path"
 	"time"
 
 	"github.com/gorilla/mux"
@@ -13,8 +11,8 @@ import (
 )
 
 var (
-	userPageTmpl    = "http_tmpl/user_page.tmpl"
-	userProfileTmpl = "http_tmpl/user_profile.tmpl"
+	userPageTmpl    = "user_page.tmpl"
+	userProfileTmpl = "user_profile.tmpl"
 )
 
 type userPage struct {
@@ -81,7 +79,7 @@ func (s *Server) showUserPage() http.HandlerFunc {
 			return
 		}
 
-		t := template.Must(template.New(path.Base(userPageTmpl)).ParseFiles(userPageTmpl))
+		t := s.getHtmlTemplate(userPageTmpl)
 		err = t.Execute(w, userPage{
 			Title:        globalTitle,
 			SelfUserName: selfUserName,
@@ -137,7 +135,7 @@ func (s *Server) showProfile() http.HandlerFunc {
 			return
 		}
 
-		t := template.Must(template.New(path.Base(userProfileTmpl)).ParseFiles(userProfileTmpl))
+		t := s.getHtmlTemplate(userProfileTmpl)
 		err = t.Execute(w, userProfile{
 			Title:         globalTitle,
 			SelfUserName:  selfUserName,

@@ -2,9 +2,7 @@ package httpserver
 
 import (
 	"context"
-	"html/template"
 	"net/http"
-	"path"
 	"time"
 
 	"github.com/gorilla/schema"
@@ -12,7 +10,7 @@ import (
 )
 
 var (
-	postTmpl = "http_tmpl/post_edit.tmpl"
+	postTmpl = "post_edit.tmpl"
 )
 
 type postPage struct {
@@ -37,7 +35,7 @@ func (s *Server) showUpsertPost() http.HandlerFunc {
 		s.logger.Debugw("showUpsertPost query received",
 			"user", selfUserName)
 
-		t := template.Must(template.New(path.Base(postTmpl)).ParseFiles(postTmpl))
+		t := s.getHtmlTemplate(postTmpl)
 		err := t.Execute(w, postPage{
 			Title:        globalTitle,
 			SelfUserName: selfUserName,

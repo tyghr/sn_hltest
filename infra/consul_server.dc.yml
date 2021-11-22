@@ -7,13 +7,15 @@ services:
       dockerfile: infra/server.Dockerfile
     container_name: sn_server
     depends_on:
-      - haproxy_mysql_lb
+      - mysql_node_1
       - rabbit_node_1
       - redis_node_5
+      - consul_node_1
     environment:
       SOCIAL_NETWORK_LOGLEVEL: -1
       SOCIAL_NETWORK_APIPORT: 8080
       SOCIAL_NETWORK_CHAT_URL: "ws://127.0.0.1:8090/ws/chat"
+      SOCIAL_NETWORK_HTMLTMPLPATH: "/html_tmpl"
       SOCIAL_NETWORK_DBTYPE: mysql
       SOCIAL_NETWORK_DBHOST: mysql_node_1
       SOCIAL_NETWORK_DBPORT: 3306
@@ -30,84 +32,126 @@ services:
       SOCIAL_NETWORK_CACHENODES: "redis_node_0:6379 redis_node_1:6379 redis_node_2:6379 redis_node_3:6379 redis_node_4:6379 redis_node_5:6379"
       SOCIAL_NETWORK_CACHEPASS: testpass
       SOCIAL_NETWORK_CACHECLUSTERED: "true"
+      CONSUL_ADDR: "consul_node_1:8500"
+      CONSUL_SERVICE_NAME: "sn_server"
+      CONSUL_SERVICE_ID: "sn_server"
+      CONSUL_AGENT_ADDR: "sn_server:8080"
+    ports:
+      - "80:8080"
     networks:
       - sn_network
 
-  sn_chat:
+  sn_counters:
     build:
       context: ../
-      dockerfile: infra/chat.Dockerfile
-    container_name: sn_chat
+      dockerfile: infra/counters.Dockerfile
+    container_name: sn_counters
     depends_on:
+      - rabbit_node_1
       - redis_node_5
+      - consul_node_1
     environment:
       SOCIAL_NETWORK_LOGLEVEL: -1
-      SOCIAL_NETWORK_APIPORT: 8090
-      SOCIAL_NETWORK_SESSION_VALIDATE_URL: "http://nginx_lb:8080/session_validate"
+      SOCIAL_NETWORK_APIPORT: 8070
+      SOCIAL_NETWORK_QUEUETYPE: rabbitmq
+      SOCIAL_NETWORK_QUEUEHOST: rabbit_node_1
+      SOCIAL_NETWORK_QUEUEPORT: 5672
+      SOCIAL_NETWORK_QUEUEUSER: testuser
+      SOCIAL_NETWORK_QUEUEPASS: testpass
       SOCIAL_NETWORK_CACHETYPE: "redis"
       SOCIAL_NETWORK_CACHENODES: "redis_node_0:6379 redis_node_1:6379 redis_node_2:6379 redis_node_3:6379 redis_node_4:6379 redis_node_5:6379"
       SOCIAL_NETWORK_CACHEPASS: testpass
       SOCIAL_NETWORK_CACHECLUSTERED: "true"
+      CONSUL_ADDR: "consul_node_1:8500"
+      CONSUL_SERVICE_NAME: "sn_counters"
+      CONSUL_SERVICE_ID: "sn_counters"
+      CONSUL_AGENT_ADDR: "sn_counters:8070"
+    ports:
+      - "8070:8070"
+    networks:
+      - sn_network
+
+  sn_chat_1:
+    build:
+      context: ../
+      dockerfile: infra/chat.Dockerfile
+    container_name: sn_chat_1
+    depends_on:
+      - redis_node_5
+      - consul_node_1
+    environment:
+      SOCIAL_NETWORK_LOGLEVEL: -1
+      SOCIAL_NETWORK_APIPORT: 8090
+      SOCIAL_NETWORK_SESSION_VALIDATE_URL: "http://sn_server:8080/session_validate"
+      SOCIAL_NETWORK_CACHETYPE: "redis"
+      SOCIAL_NETWORK_CACHENODES: "redis_node_0:6379 redis_node_1:6379 redis_node_2:6379 redis_node_3:6379 redis_node_4:6379 redis_node_5:6379"
+      SOCIAL_NETWORK_CACHEPASS: testpass
+      SOCIAL_NETWORK_CACHECLUSTERED: "true"
+      CONSUL_ADDR: "consul_node_1:8500"
+      CONSUL_SERVICE_NAME: "sn_chat"
+      CONSUL_SERVICE_ID: "sn_chat_1"
+      CONSUL_AGENT_ADDR: "sn_chat_1:8090"
+    # ports:
+    #   - "8090:8090"
+    networks:
+      - sn_network
+
+  sn_chat_2:
+    build:
+      context: ../
+      dockerfile: infra/chat.Dockerfile
+    container_name: sn_chat_2
+    depends_on:
+      - redis_node_5
+      - consul_node_1
+    environment:
+      SOCIAL_NETWORK_LOGLEVEL: -1
+      SOCIAL_NETWORK_APIPORT: 8090
+      SOCIAL_NETWORK_SESSION_VALIDATE_URL: "http://sn_server:8080/session_validate"
+      SOCIAL_NETWORK_CACHETYPE: "redis"
+      SOCIAL_NETWORK_CACHENODES: "redis_node_0:6379 redis_node_1:6379 redis_node_2:6379 redis_node_3:6379 redis_node_4:6379 redis_node_5:6379"
+      SOCIAL_NETWORK_CACHEPASS: testpass
+      SOCIAL_NETWORK_CACHECLUSTERED: "true"
+      CONSUL_ADDR: "consul_node_1:8500"
+      CONSUL_SERVICE_NAME: "sn_chat"
+      CONSUL_SERVICE_ID: "sn_chat_2"
+      CONSUL_AGENT_ADDR: "sn_chat_2:8090"
+    # ports:
+    #   - "8090:8090"
+    networks:
+      - sn_network
+
+  sn_balancer:
+    build:
+      context: ../
+      dockerfile: infra/balancer_chat.Dockerfile
+    container_name: sn_balancer
+    depends_on:
+      - sn_server
+      - sn_chat_1
+      - sn_chat_2
+      - consul_node_1
+    environment:
+      SOCIAL_NETWORK_LOGLEVEL: -1
+      SOCIAL_NETWORK_APIPORT: 8090
+      CONSUL_ADDR: "consul_node_1:8500"
+      CONSUL_SERVICE_NAME: "sn_chat"
     ports:
       - "8090:8090"
     networks:
       - sn_network
 
-  nginx_lb:
-    depends_on:
-      - sn_test_1
-      - sn_test_2
-    image: nginx
-    container_name: nginx_lb
-    restart: on-failure
-    networks:
-      - sn_network
-    volumes:
-      - "./lb_nginx.conf:/etc/nginx/conf.d/default.conf"
+  consul_node_1:
+    image: consul
+    container_name: consul_node_1
+    command: agent -server -ui -node=consul_node_1 -bootstrap-expect=1 -client=0.0.0.0
     ports:
-      - "80:8080"
-      - "81:8081"
-
-  sn_test_1:
-    depends_on:
-      - haproxy_mysql_lb
-    build:
-      context: ../
-      dockerfile: infra/test.Dockerfile
-    container_name: sn_test_1
-    restart: on-failure
-    environment:
-      SOCIAL_NETWORK_DBHOST: haproxy_mysql_lb
+      - '8500:8500'
+      - '8600:8600/udp'
     networks:
       - sn_network
-
-  sn_test_2:
-    depends_on:
-      - haproxy_mysql_lb
-    build:
-      context: ../
-      dockerfile: infra/test.Dockerfile
-    container_name: sn_test_2
-    restart: on-failure
-    environment:
-      SOCIAL_NETWORK_DBHOST: haproxy_mysql_lb
-    networks:
-      - sn_network
-
-  haproxy_mysql_lb:
-    depends_on:
-      - mysql_node_1
-      - mysql_node_2
-      - mysql_node_3
-    image: haproxy
-    container_name: haproxy_mysql_lb
-    restart: "no"
-    networks:
-      - sn_network
-    volumes:
-      - "./lb_haproxy.cfg:/usr/local/etc/haproxy/haproxy.cfg"
-    ports:
-      - "8404:8404"
+#    command: agent -server -ui -node=consul_node_1 -bootstrap-expect=1 -advertise=192.168.8.101
+#    network_mode: "host"
 
   mysql_node_1:
     image: mysql

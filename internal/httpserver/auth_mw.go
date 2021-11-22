@@ -1,9 +1,7 @@
 package httpserver
 
 import (
-	"html/template"
 	"net/http"
-	"path"
 
 	"crypto/sha256"
 	"time"
@@ -25,7 +23,7 @@ var (
 	// realm               = "Please enter your credentials"
 	// errNotAuthenticated = errors.New("not authenticated")
 	// errCookieExpired    = errors.New("session expired")
-	loginTmpl = "http_tmpl/login.tmpl"
+	loginTmpl = "login.tmpl"
 )
 
 type loginPage struct {
@@ -87,7 +85,7 @@ func (s *Server) showLogin() http.HandlerFunc {
 
 		s.logger.Debugf("showLogin query received")
 
-		t := template.Must(template.New(path.Base(loginTmpl)).ParseFiles(loginTmpl))
+		t := s.getHtmlTemplate(loginTmpl)
 		err := t.Execute(w, loginPage{
 			Title:        globalTitle,
 			LoginLink:    "/login",

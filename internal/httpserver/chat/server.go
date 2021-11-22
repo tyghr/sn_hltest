@@ -30,6 +30,10 @@ func NewChatServer(storeChat storage.Chat, conf *config.Config, l logger.Logger)
 	chat.router.HandleFunc("/ws/chat", chat.handleChatWS)
 	// chat.router.HandleFunc("/chat", chat.handleChatHome).Methods(http.MethodGet)
 
+	chat.router.HandleFunc("/health_check", func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusOK)
+	}).Methods(http.MethodGet)
+
 	http.Handle("/", chat.router)
 
 	return chat

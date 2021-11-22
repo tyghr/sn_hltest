@@ -22,6 +22,11 @@ type Config struct {
 	CacheNodes     []string
 	CachePass      string
 	CacheClustered bool
+
+	ConsulServerAddr  string
+	ConsulServiceName string
+	ConsulServiceID   string
+	ConsulAgentAddr   string
 }
 
 func NewConfig() *Config {
@@ -38,6 +43,11 @@ func NewConfig() *Config {
 		CacheNodes:     []string{"redis_node_0:6379", "redis_node_1:6379", "redis_node_2:6379", "redis_node_3:6379", "redis_node_4:6379", "redis_node_5:6379"},
 		CachePass:      "testpass",
 		CacheClustered: false,
+
+		ConsulServerAddr:  "",
+		ConsulServiceName: "",
+		ConsulServiceID:   "",
+		ConsulAgentAddr:   "",
 	}
 }
 
@@ -50,6 +60,11 @@ func (conf *Config) bindAllEnv() {
 	_ = conf.BindEnv("cachenodes", "SOCIAL_NETWORK_CACHENODES")
 	_ = conf.BindEnv("cachepass", "SOCIAL_NETWORK_CACHEPASS")
 	_ = conf.BindEnv("cacheclustered", "SOCIAL_NETWORK_CACHECLUSTERED")
+
+	_ = conf.BindEnv("consul_server_addr", "CONSUL_ADDR")
+	_ = conf.BindEnv("consul_service_name", "CONSUL_SERVICE_NAME")
+	_ = conf.BindEnv("consul_service_id", "CONSUL_SERVICE_ID")
+	_ = conf.BindEnv("consul_agent_addr", "CONSUL_AGENT_ADDR")
 }
 
 func (conf *Config) setDefaults() {
@@ -61,6 +76,11 @@ func (conf *Config) setDefaults() {
 	conf.SetDefault("cachenodes", conf.CacheNodes)
 	conf.SetDefault("cachepass", conf.CachePass)
 	conf.SetDefault("cacheclustered", conf.CacheClustered)
+
+	conf.SetDefault("consul_server_addr", conf.ConsulServerAddr)
+	conf.SetDefault("consul_service_name", conf.ConsulServiceName)
+	conf.SetDefault("consul_service_id", conf.ConsulServiceID)
+	conf.SetDefault("consul_agent_addr", conf.ConsulAgentAddr)
 }
 
 //ReadSettings ...
@@ -83,6 +103,11 @@ func (conf *Config) ReadAllSettings() error {
 	conf.CacheNodes = conf.GetStringSlice("cachenodes")
 	conf.CachePass = conf.GetString("cachepass")
 	conf.CacheClustered = conf.GetBool("cacheclustered")
+
+	conf.ConsulServerAddr = conf.GetString("consul_server_addr")
+	conf.ConsulServiceName = conf.GetString("consul_service_name")
+	conf.ConsulServiceID = conf.GetString("consul_service_id")
+	conf.ConsulAgentAddr = conf.GetString("consul_agent_addr")
 
 	return nil
 }

@@ -20,7 +20,7 @@ services:
       SOCIAL_NETWORK_DBNAME: sntest
       SOCIAL_NETWORK_DBUSER: testuser
       SOCIAL_NETWORK_DBPASS: testpass
-      SOCIAL_NETWORK_DBMIGRATIONPATH: "/opt/snserver/migrations/mysql"
+      SOCIAL_NETWORK_DBMIGRATIONPATH: "/migrations/mysql"
       SOCIAL_NETWORK_QUEUETYPE: rabbitmq
       SOCIAL_NETWORK_QUEUEHOST: rabbit_node_1
       SOCIAL_NETWORK_QUEUEPORT: 5672

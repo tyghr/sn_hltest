@@ -6,9 +6,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"html/template"
 	"net/http"
-	"path"
 	"sort"
 	"strings"
 
@@ -16,8 +14,7 @@ import (
 )
 
 var (
-	homeTemplateName = "http_tmpl/chat.tmpl"
-	homeTemplate     = template.Must(template.New(path.Base(homeTemplateName)).ParseFiles(homeTemplateName))
+	homeTemplateName = "chat.tmpl"
 	chatEPTemplate   = "%s?chat_id=%s"
 )
 
@@ -45,6 +42,8 @@ func (s *Server) handleChatHome() http.HandlerFunc {
 			"request_id", requestID,
 			"chat_person", uP,
 		)
+
+		homeTemplate := s.getHtmlTemplate(homeTemplateName)
 
 		err := homeTemplate.Execute(w, struct {
 			Addr           string

@@ -9,8 +9,8 @@ import (
 
 	"github.com/tyghr/logger"
 	config "github.com/tyghr/social_network/internal/config/counters"
-	consul "github.com/tyghr/social_network/internal/consul/agent"
 	httpCounters "github.com/tyghr/social_network/internal/httpserver/counters"
+	consul "github.com/tyghr/social_network/internal/infra/consul/agent"
 	"github.com/tyghr/social_network/internal/model"
 	"github.com/tyghr/social_network/internal/storage"
 	redis "github.com/tyghr/social_network/internal/storage/cache/redis/counters"

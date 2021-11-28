@@ -1,17 +1,17 @@
 package config
 
 func (conf *Config) ServerAddr() string {
-	return conf.ConsulServerAddr
+	return conf.ConsulConfig.ServerAddr
 }
 
 func (conf *Config) AgentAddr() string {
-	return conf.ConsulAgentAddr
+	return conf.ConsulConfig.AgentAddr
 }
 
 func (conf *Config) ServiceName() string {
-	return conf.ConsulServiceName
+	return conf.ConsulConfig.ServiceName
 }
 
 func (conf *Config) ServiceID() string {
-	return conf.ConsulServiceID
+	return conf.ConsulConfig.ServiceID
 }

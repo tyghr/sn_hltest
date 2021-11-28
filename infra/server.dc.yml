@@ -10,10 +10,12 @@ services:
       - mysql_node_1
       - rabbit_node_1
       - redis_node_5
+      - consul_node_1
     environment:
       SOCIAL_NETWORK_LOGLEVEL: -1
       SOCIAL_NETWORK_APIPORT: 8080
       SOCIAL_NETWORK_CHAT_URL: "ws://127.0.0.1:8090/ws/chat"
+      SOCIAL_NETWORK_HTMLTMPLPATH: "/html_tmpl"
       SOCIAL_NETWORK_DBTYPE: mysql
       SOCIAL_NETWORK_DBHOST: mysql_node_1
       SOCIAL_NETWORK_DBPORT: 3306
@@ -30,6 +32,13 @@ services:
       SOCIAL_NETWORK_CACHENODES: "redis_node_0:6379 redis_node_1:6379 redis_node_2:6379 redis_node_3:6379 redis_node_4:6379 redis_node_5:6379"
       SOCIAL_NETWORK_CACHEPASS: testpass
       SOCIAL_NETWORK_CACHECLUSTERED: "true"
+      CONSUL_ADDR: "consul_node_1:8500"
+      CONSUL_SERVICE_NAME: "sn_server"
+      CONSUL_SERVICE_ID: "sn_server"
+      CONSUL_AGENT_ADDR: "sn_server:8080"
+      ZABBIX_SERVER_HOST: zabbix_server
+      ZABBIX_PORT: 10051
+      ZABBIX_HOST_NAME: Zabbix server
     ports:
       - "80:8080"
     networks:
@@ -43,6 +52,7 @@ services:
     depends_on:
       - rabbit_node_1
       - redis_node_5
+      - consul_node_1
     environment:
       SOCIAL_NETWORK_LOGLEVEL: -1
       SOCIAL_NETWORK_APIPORT: 8070
@@ -55,18 +65,23 @@ services:
       SOCIAL_NETWORK_CACHENODES: "redis_node_0:6379 redis_node_1:6379 redis_node_2:6379 redis_node_3:6379 redis_node_4:6379 redis_node_5:6379"
       SOCIAL_NETWORK_CACHEPASS: testpass
       SOCIAL_NETWORK_CACHECLUSTERED: "true"
+      CONSUL_ADDR: "consul_node_1:8500"
+      CONSUL_SERVICE_NAME: "sn_counters"
+      CONSUL_SERVICE_ID: "sn_counters"
+      CONSUL_AGENT_ADDR: "sn_counters:8070"
     ports:
       - "8070:8070"
     networks:
       - sn_network
 
-  sn_chat:
+  sn_chat_1:
     build:
       context: ../
       dockerfile: infra/chat.Dockerfile
-    container_name: sn_chat
+    container_name: sn_chat_1
     depends_on:
       - redis_node_5
+      - consul_node_1
     environment:
       SOCIAL_NETWORK_LOGLEVEL: -1
       SOCIAL_NETWORK_APIPORT: 8090
@@ -75,10 +90,71 @@ services:
       SOCIAL_NETWORK_CACHENODES: "redis_node_0:6379 redis_node_1:6379 redis_node_2:6379 redis_node_3:6379 redis_node_4:6379 redis_node_5:6379"
       SOCIAL_NETWORK_CACHEPASS: testpass
       SOCIAL_NETWORK_CACHECLUSTERED: "true"
+      CONSUL_ADDR: "consul_node_1:8500"
+      CONSUL_SERVICE_NAME: "sn_chat"
+      CONSUL_SERVICE_ID: "sn_chat_1"
+      CONSUL_AGENT_ADDR: "sn_chat_1:8090"
+    # ports:
+    #   - "8090:8090"
+    networks:
+      - sn_network
+
+  sn_chat_2:
+    build:
+      context: ../
+      dockerfile: infra/chat.Dockerfile
+    container_name: sn_chat_2
+    depends_on:
+      - redis_node_5
+      - consul_node_1
+    environment:
+      SOCIAL_NETWORK_LOGLEVEL: -1
+      SOCIAL_NETWORK_APIPORT: 8090
+      SOCIAL_NETWORK_SESSION_VALIDATE_URL: "http://sn_server:8080/session_validate"
+      SOCIAL_NETWORK_CACHETYPE: "redis"
+      SOCIAL_NETWORK_CACHENODES: "redis_node_0:6379 redis_node_1:6379 redis_node_2:6379 redis_node_3:6379 redis_node_4:6379 redis_node_5:6379"
+      SOCIAL_NETWORK_CACHEPASS: testpass
+      SOCIAL_NETWORK_CACHECLUSTERED: "true"
+      CONSUL_ADDR: "consul_node_1:8500"
+      CONSUL_SERVICE_NAME: "sn_chat"
+      CONSUL_SERVICE_ID: "sn_chat_2"
+      CONSUL_AGENT_ADDR: "sn_chat_2:8090"
+    # ports:
+    #   - "8090:8090"
+    networks:
+      - sn_network
+
+  sn_balancer:
+    build:
+      context: ../
+      dockerfile: infra/balancer_chat.Dockerfile
+    container_name: sn_balancer
+    depends_on:
+      - sn_server
+      - sn_chat_1
+      - sn_chat_2
+      - consul_node_1
+    environment:
+      SOCIAL_NETWORK_LOGLEVEL: -1
+      SOCIAL_NETWORK_APIPORT: 8090
+      CONSUL_ADDR: "consul_node_1:8500"
+      CONSUL_SERVICE_NAME: "sn_chat"
     ports:
       - "8090:8090"
     networks:
       - sn_network
+
+  consul_node_1:
+    image: consul
+    container_name: consul_node_1
+    command: agent -server -ui -node=consul_node_1 -bootstrap-expect=1 -client=0.0.0.0
+    ports:
+      - '8500:8500'
+      - '8600:8600/udp'
+    networks:
+      - sn_network
+#    command: agent -server -ui -node=consul_node_1 -bootstrap-expect=1 -advertise=192.168.8.101
+#    network_mode: "host"
 
   mysql_node_1:
     image: mysql
@@ -201,9 +277,77 @@ services:
       RABBITMQ_PASSWORD: "testpass"
 #     volumes:
 #       - 'rabbitmq_data:/bitnami'
+
+  pg_zabbix:
+    container_name: pg_zabbix
+    image: postgres:12-alpine
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: password
+      POSTGRES_DB: zabbix
+    networks:
+      - sn_network
+
+  zabbix_server:
+    image: zabbix/zabbix-server-pgsql:alpine-latest
+    container_name: zabbix_server
+    environment:
+      - DB_SERVER_HOST=pg_zabbix
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=password
+#    ports:
+#      - '10051:10051'
+    depends_on:
+      - pg_zabbix
+    networks:
+      - sn_network
+
+  zabbix_web_nginx:
+    image: zabbix/zabbix-web-nginx-pgsql:alpine-latest
+    container_name: zabbix_web_nginx
+    environment:
+      - DB_SERVER_HOST=pg_zabbix
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=password
+      - ZBX_SERVER_HOST=zabbix_server
+    ports:
+      - '8085:8080'
+    depends_on:
+      - zabbix_server
+    networks:
+      - sn_network
+
+  prometheus:
+    image: prom/prometheus
+    container_name: prometheus
+    volumes:
+      - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml
+    # command:
+      # - '--config.file=/etc/prometheus/prometheus.yml'
+      # - '--storage.tsdb.path=/prometheus'
+    # ports:
+      # - "9090:9090"
+    restart: always
+    networks:
+      - sn_network
+
+  grafana:
+    # build:
+    #   context: grafana
+    #   dockerfile: Dockerfile
+    image: grafana/grafana
+    container_name: grafana
+    environment:
+      - GF_INSTALL_PLUGINS=vertamedia-clickhouse-datasource
+    ports:
+      - '3000:3000'
+    networks:
+      - sn_network
+    depends_on:
+      - prometheus
+
 # volumes:
-#   rabbitmq_data:
-#     driver: local
+  # rabbitmq_data:
 
 networks:
   sn_network:

@@ -27,8 +27,8 @@ func connect(dbUrl string) (db *sqlx.DB, err error) {
 	return
 }
 
-func OpenConn(conf *config.Config, l logger.Logger) (storage.DataBase, error) {
-	dbUrl := fmt.Sprintf("%s:%s@tcp(%s:%d)/%s?parseTime=true", conf.DBuser, conf.DBpass, conf.DBhost, conf.DBport, conf.DBname)
+func OpenConn(conf *config.DBConfig, l logger.Logger) (storage.DataBase, error) {
+	dbUrl := fmt.Sprintf("%s:%s@tcp(%s:%d)/%s?parseTime=true", conf.User, conf.Pass, conf.Host, conf.Port, conf.Name)
 	db, err := connect(dbUrl)
 	if err != nil {
 		return nil, err

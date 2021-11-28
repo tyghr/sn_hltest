@@ -19,36 +19,56 @@ type Config struct {
 	// ConfigName string
 	// ConfigType string
 	// ConfigPath string
-	LogLevel int
-	ApiPort  int
-	ChatUrl  string
-
+	LogLevel          int
+	ApiPort           int
 	HtmlTemplatesPath string
 
-	DBtype          string
-	DBhost          string
-	DBport          int
-	DBname          string
-	DBuser          string
-	DBpass          string
-	DBMigrationPath string
+	ChatUrl string
 
-	QueueType  string
-	QueueHost  string
-	QueuePort  int
-	QueueUser  string
-	QueuePass  string
-	QueueVHost string
+	DBConfig     *DBConfig
+	QueueConfig  *QueueConfig
+	CacheConfig  *CacheConfig
+	ConsulConfig *ConsulConfig
+	ZabbixConfig *ZabbixConfig
+}
 
-	CacheType      string
-	CacheNodes     []string
-	CachePass      string
-	CacheClustered bool
+type DBConfig struct {
+	Type          string
+	Host          string
+	Port          int
+	Name          string
+	User          string
+	Pass          string
+	MigrationPath string
+}
 
-	ConsulServerAddr  string
-	ConsulServiceName string
-	ConsulServiceID   string
-	ConsulAgentAddr   string
+type QueueConfig struct {
+	Type  string
+	Host  string
+	Port  int
+	User  string
+	Pass  string
+	VHost string
+}
+
+type CacheConfig struct {
+	Type      string
+	Nodes     []string
+	Pass      string
+	Clustered bool
+}
+
+type ConsulConfig struct {
+	ServerAddr  string
+	ServiceName string
+	ServiceID   string
+	AgentAddr   string
+}
+
+type ZabbixConfig struct {
+	ServerHost string
+	Port       int
+	HostName   string
 }
 
 func NewConfig() *Config {
@@ -57,36 +77,46 @@ func NewConfig() *Config {
 		// ConfigName: "config",
 		// ConfigType: "json",
 		// ConfigPath: "./", // change in prod to "/etc/social_network/"
-		LogLevel: -1,
-		ApiPort:  80,
-		ChatUrl:  "ws://127.0.0.1:8090/ws/chat",
-
+		LogLevel:          -1,
+		ApiPort:           80,
 		HtmlTemplatesPath: "html_tmpl",
 
-		DBtype:          DBMysql,
-		DBhost:          "localhost",
-		DBport:          3306,
-		DBname:          "sntest",
-		DBuser:          "testuser",
-		DBpass:          "testpass",
-		DBMigrationPath: "migpath",
+		ChatUrl: "ws://127.0.0.1:8090/ws/chat",
 
-		QueueType:  MQRabbit,
-		QueueHost:  "127.0.0.1",
-		QueuePort:  5672,
-		QueueUser:  "testuser",
-		QueuePass:  "testpass",
-		QueueVHost: "",
-
-		CacheType:      CacheRedis,
-		CacheNodes:     []string{"redis_node_0:6379", "redis_node_1:6379", "redis_node_2:6379", "redis_node_3:6379", "redis_node_4:6379", "redis_node_5:6379"},
-		CachePass:      "testpass",
-		CacheClustered: false,
-
-		ConsulServerAddr:  "",
-		ConsulServiceName: "",
-		ConsulServiceID:   "",
-		ConsulAgentAddr:   "",
+		DBConfig: &DBConfig{
+			Type:          DBMysql,
+			Host:          "localhost",
+			Port:          3306,
+			Name:          "sntest",
+			User:          "testuser",
+			Pass:          "testpass",
+			MigrationPath: "migpath",
+		},
+		QueueConfig: &QueueConfig{
+			Type:  MQRabbit,
+			Host:  "127.0.0.1",
+			Port:  5672,
+			User:  "testuser",
+			Pass:  "testpass",
+			VHost: "",
+		},
+		CacheConfig: &CacheConfig{
+			Type:      CacheRedis,
+			Nodes:     []string{"redis_node_0:6379", "redis_node_1:6379", "redis_node_2:6379", "redis_node_3:6379", "redis_node_4:6379", "redis_node_5:6379"},
+			Pass:      "testpass",
+			Clustered: false,
+		},
+		ConsulConfig: &ConsulConfig{
+			ServerAddr:  "",
+			ServiceName: "",
+			ServiceID:   "",
+			AgentAddr:   "",
+		},
+		ZabbixConfig: &ZabbixConfig{
+			ServerHost: "",
+			Port:       0,
+			HostName:   "",
+		},
 	}
 }
 
@@ -127,6 +157,10 @@ func (conf *Config) bindAllEnv() {
 	_ = conf.BindEnv("consul_service_name", "CONSUL_SERVICE_NAME")
 	_ = conf.BindEnv("consul_service_id", "CONSUL_SERVICE_ID")
 	_ = conf.BindEnv("consul_agent_addr", "CONSUL_AGENT_ADDR")
+
+	_ = conf.BindEnv("zabbix_server_host", "ZABBIX_SERVER_HOST")
+	_ = conf.BindEnv("zabbix_port", "ZABBIX_PORT")
+	_ = conf.BindEnv("zabbix_host_name", "ZABBIX_HOST_NAME")
 }
 
 func (conf *Config) setDefaults() {
@@ -136,30 +170,34 @@ func (conf *Config) setDefaults() {
 
 	conf.SetDefault("html_tmpl_path", conf.HtmlTemplatesPath)
 
-	conf.SetDefault("dbtype", conf.DBtype)
-	conf.SetDefault("dbhost", conf.DBhost)
-	conf.SetDefault("dbport", conf.DBport)
-	conf.SetDefault("dbname", conf.DBname)
-	conf.SetDefault("dbuser", conf.DBuser)
-	conf.SetDefault("dbpass", conf.DBpass)
-	conf.SetDefault("dbmigrationpath", conf.DBMigrationPath)
+	conf.SetDefault("dbtype", conf.DBConfig.Type)
+	conf.SetDefault("dbhost", conf.DBConfig.Host)
+	conf.SetDefault("dbport", conf.DBConfig.Port)
+	conf.SetDefault("dbname", conf.DBConfig.Name)
+	conf.SetDefault("dbuser", conf.DBConfig.User)
+	conf.SetDefault("dbpass", conf.DBConfig.Pass)
+	conf.SetDefault("dbmigrationpath", conf.DBConfig.MigrationPath)
 
-	conf.SetDefault("queuetype", conf.QueueType)
-	conf.SetDefault("queuehost", conf.QueueHost)
-	conf.SetDefault("queueport", conf.QueuePort)
-	conf.SetDefault("queueuser", conf.QueueUser)
-	conf.SetDefault("queuepass", conf.QueuePass)
-	conf.SetDefault("queuevhost", conf.QueueVHost)
+	conf.SetDefault("queuetype", conf.QueueConfig.Type)
+	conf.SetDefault("queuehost", conf.QueueConfig.Host)
+	conf.SetDefault("queueport", conf.QueueConfig.Port)
+	conf.SetDefault("queueuser", conf.QueueConfig.User)
+	conf.SetDefault("queuepass", conf.QueueConfig.Pass)
+	conf.SetDefault("queuevhost", conf.QueueConfig.VHost)
 
-	conf.SetDefault("cachetype", conf.CacheType)
-	conf.SetDefault("cachenodes", conf.CacheNodes)
-	conf.SetDefault("cachepass", conf.CachePass)
-	conf.SetDefault("cacheclustered", conf.CacheClustered)
+	conf.SetDefault("cachetype", conf.CacheConfig.Type)
+	conf.SetDefault("cachenodes", conf.CacheConfig.Nodes)
+	conf.SetDefault("cachepass", conf.CacheConfig.Pass)
+	conf.SetDefault("cacheclustered", conf.CacheConfig.Clustered)
 
-	conf.SetDefault("consul_server_addr", conf.ConsulServerAddr)
-	conf.SetDefault("consul_service_name", conf.ConsulServiceName)
-	conf.SetDefault("consul_service_id", conf.ConsulServiceID)
-	conf.SetDefault("consul_agent_addr", conf.ConsulAgentAddr)
+	conf.SetDefault("consul_server_addr", conf.ConsulConfig.ServerAddr)
+	conf.SetDefault("consul_service_name", conf.ConsulConfig.ServiceName)
+	conf.SetDefault("consul_service_id", conf.ConsulConfig.ServiceID)
+	conf.SetDefault("consul_agent_addr", conf.ConsulConfig.AgentAddr)
+
+	conf.SetDefault("zabbix_server_host", conf.ZabbixConfig.ServerHost)
+	conf.SetDefault("zabbix_port", conf.ZabbixConfig.Port)
+	conf.SetDefault("zabbix_host_name", conf.ZabbixConfig.HostName)
 }
 
 //ReadSettings ...
@@ -180,30 +218,34 @@ func (conf *Config) ReadAllSettings() error {
 
 	conf.HtmlTemplatesPath = conf.GetString("html_tmpl_path")
 
-	conf.DBtype = conf.GetString("dbtype")
-	conf.DBhost = conf.GetString("dbhost")
-	conf.DBport = conf.GetInt("dbport")
-	conf.DBname = conf.GetString("dbname")
-	conf.DBuser = conf.GetString("dbuser")
-	conf.DBpass = conf.GetString("dbpass")
-	conf.DBMigrationPath = conf.GetString("dbmigrationpath")
+	conf.DBConfig.Type = conf.GetString("dbtype")
+	conf.DBConfig.Host = conf.GetString("dbhost")
+	conf.DBConfig.Port = conf.GetInt("dbport")
+	conf.DBConfig.Name = conf.GetString("dbname")
+	conf.DBConfig.User = conf.GetString("dbuser")
+	conf.DBConfig.Pass = conf.GetString("dbpass")
+	conf.DBConfig.MigrationPath = conf.GetString("dbmigrationpath")
 
-	conf.QueueType = conf.GetString("queuetype")
-	conf.QueueHost = conf.GetString("queuehost")
-	conf.QueuePort = conf.GetInt("queueport")
-	conf.QueueUser = conf.GetString("queueuser")
-	conf.QueuePass = conf.GetString("queuepass")
-	conf.QueueVHost = conf.GetString("queuevhost")
+	conf.QueueConfig.Type = conf.GetString("queuetype")
+	conf.QueueConfig.Host = conf.GetString("queuehost")
+	conf.QueueConfig.Port = conf.GetInt("queueport")
+	conf.QueueConfig.User = conf.GetString("queueuser")
+	conf.QueueConfig.Pass = conf.GetString("queuepass")
+	conf.QueueConfig.VHost = conf.GetString("queuevhost")
 
-	conf.CacheType = conf.GetString("cachetype")
-	conf.CacheNodes = conf.GetStringSlice("cachenodes")
-	conf.CachePass = conf.GetString("cachepass")
-	conf.CacheClustered = conf.GetBool("cacheclustered")
+	conf.CacheConfig.Type = conf.GetString("cachetype")
+	conf.CacheConfig.Nodes = conf.GetStringSlice("cachenodes")
+	conf.CacheConfig.Pass = conf.GetString("cachepass")
+	conf.CacheConfig.Clustered = conf.GetBool("cacheclustered")
 
-	conf.ConsulServerAddr = conf.GetString("consul_server_addr")
-	conf.ConsulServiceName = conf.GetString("consul_service_name")
-	conf.ConsulServiceID = conf.GetString("consul_service_id")
-	conf.ConsulAgentAddr = conf.GetString("consul_agent_addr")
+	conf.ConsulConfig.ServerAddr = conf.GetString("consul_server_addr")
+	conf.ConsulConfig.ServiceName = conf.GetString("consul_service_name")
+	conf.ConsulConfig.ServiceID = conf.GetString("consul_service_id")
+	conf.ConsulConfig.AgentAddr = conf.GetString("consul_agent_addr")
+
+	conf.ZabbixConfig.ServerHost = conf.GetString("zabbix_server_host")
+	conf.ZabbixConfig.Port = conf.GetInt("zabbix_port")
+	conf.ZabbixConfig.HostName = conf.GetString("zabbix_host_name")
 
 	return nil
 }

@@ -19,7 +19,7 @@ var (
 
 type Queue struct {
 	conn   *amqp.Connection
-	config *config.Config
+	config *config.QueueConfig
 	logger logger.Logger
 }
 
@@ -41,14 +41,14 @@ func cutStringSlice(s []string) [][]string {
 	return append([][]string{s[:bucketLen]}, cutStringSlice(s[bucketLen:])...)
 }
 
-func New(conf *config.Config, lgr logger.Logger) storage.Queue {
+func New(conf *config.QueueConfig, lgr logger.Logger) storage.Queue {
 	q := &Queue{
 		config: conf,
 		logger: lgr,
 	}
 
 	var scheme string
-	switch conf.QueueType {
+	switch conf.Type {
 	case config.MQRabbit:
 		scheme = "amqp"
 	case config.MQRabbitSecured:
@@ -57,13 +57,13 @@ func New(conf *config.Config, lgr logger.Logger) storage.Queue {
 		q.logger.Fatalw("unknown queue type")
 	}
 	var host string
-	if conf.QueuePort == 0 {
-		host = conf.QueueHost
+	if conf.Port == 0 {
+		host = conf.Host
 	} else {
-		host = fmt.Sprintf("%s:%d", conf.QueueHost, conf.QueuePort)
+		host = fmt.Sprintf("%s:%d", conf.Host, conf.Port)
 	}
 
-	url := fmt.Sprintf("%s://%s:%s@%s/%s", scheme, conf.QueueUser, conf.QueuePass, host, conf.QueueVHost)
+	url := fmt.Sprintf("%s://%s:%s@%s/%s", scheme, conf.User, conf.Pass, host, conf.VHost)
 
 	q.logger.Debugw("connecting to rabbitmq...")
 	conn, err := connect(url)

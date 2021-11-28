@@ -8,8 +8,8 @@ import (
 
 	"github.com/tyghr/logger"
 	config "github.com/tyghr/social_network/internal/config/chat"
-	consul "github.com/tyghr/social_network/internal/consul/agent"
 	httpChat "github.com/tyghr/social_network/internal/httpserver/chat"
+	consul "github.com/tyghr/social_network/internal/infra/consul/agent"
 	redisChat "github.com/tyghr/social_network/internal/storage/cache/redis/chat"
 )
 

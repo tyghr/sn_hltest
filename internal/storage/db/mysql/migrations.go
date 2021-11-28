@@ -14,10 +14,10 @@ import (
 	_ "github.com/golang-migrate/migrate/v4/source/file"
 )
 
-func runMigrations(conf *config.Config, lgr logger.Logger) error {
+func runMigrations(conf *config.DBConfig, lgr logger.Logger) error {
 	lgr.Debugw("start migrations...")
 
-	dbUrl := fmt.Sprintf("%s:%s@tcp(%s:%d)/%s?parseTime=true&multiStatements=true", conf.DBuser, conf.DBpass, conf.DBhost, conf.DBport, conf.DBname)
+	dbUrl := fmt.Sprintf("%s:%s@tcp(%s:%d)/%s?parseTime=true&multiStatements=true", conf.User, conf.Pass, conf.Host, conf.Port, conf.Name)
 	instance, err := sql.Open("mysql", dbUrl)
 	if err != nil {
 		lgr.Errorw("failed migration")
@@ -32,7 +32,7 @@ func runMigrations(conf *config.Config, lgr logger.Logger) error {
 		return fmt.Errorf("Error while configuring the driver: %v", err)
 	}
 
-	migration, err := migrate.NewWithDatabaseInstance(fmt.Sprintf("file://%v", conf.DBMigrationPath), "mysql", driver)
+	migration, err := migrate.NewWithDatabaseInstance(fmt.Sprintf("file://%v", conf.MigrationPath), "mysql", driver)
 	if err != nil {
 		lgr.Errorw("failed migration")
 

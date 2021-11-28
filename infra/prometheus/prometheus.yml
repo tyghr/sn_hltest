@@ -1,0 +1,13 @@
+global:
+  scrape_interval:     5s
+  external_labels:
+    monitor: 'sn_server'
+
+scrape_configs:
+  - job_name: 'sn_server'
+    static_configs:
+      - targets: ['sn_server:8080']
+        labels:
+          # dc: "dc1"
+          hostname: "sn_server"
+          service: "sn_server"

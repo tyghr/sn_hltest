@@ -10,9 +10,14 @@ import (
 	"sync"
 	"time"
 
+	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"github.com/tyghr/logger"
 	"github.com/tyghr/social_network/internal/config"
 	"github.com/tyghr/social_network/internal/storage"
+
+	metrics "github.com/slok/go-http-metrics/metrics/prometheus"
+	"github.com/slok/go-http-metrics/middleware"
+	"github.com/slok/go-http-metrics/middleware/std"
 
 	"github.com/gorilla/handlers"
 	"github.com/gorilla/mux"
@@ -91,7 +96,13 @@ func (s *Server) configureRouter() {
 	wsRouter := s.router.PathPrefix("/ws").Subrouter()
 	wsRouter.HandleFunc("/feed", s.authSession(s.handleFeedWS()))
 
+	promMiddleware := middleware.New(middleware.Config{
+		Recorder: metrics.NewRecorder(metrics.Config{}),
+	})
+	s.router.Handle("/metrics", promhttp.Handler())
+
 	mainRouter := s.router.PathPrefix("/").Subrouter()
+	mainRouter.Use(std.HandlerProvider("", promMiddleware))
 	mainRouter.Use(s.setRequestIDHandler)
 	mainRouter.Use(s.logRequest)
 

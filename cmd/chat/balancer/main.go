@@ -10,7 +10,7 @@ import (
 
 	"github.com/tyghr/logger"
 	config "github.com/tyghr/social_network/internal/config/balancer"
-	consul "github.com/tyghr/social_network/internal/consul/balancer"
+	consul "github.com/tyghr/social_network/internal/infra/consul/balancer"
 )
 
 type Backend struct {

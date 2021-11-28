@@ -7,10 +7,13 @@ import (
 	"os"
 	"time"
 
+	"github.com/armon/go-metrics"
+	"github.com/armon/go-metrics/prometheus"
 	"github.com/tyghr/logger"
 	"github.com/tyghr/social_network/internal/config"
-	consul "github.com/tyghr/social_network/internal/consul/agent"
 	"github.com/tyghr/social_network/internal/httpserver"
+	consul "github.com/tyghr/social_network/internal/infra/consul/agent"
+	"github.com/tyghr/social_network/internal/infra/zabbix"
 	"github.com/tyghr/social_network/internal/storage"
 	"github.com/tyghr/social_network/internal/storage/cache/redis"
 	"github.com/tyghr/social_network/internal/storage/db/mysql"
@@ -33,6 +36,13 @@ func main() {
 
 	lgr := logger.NewLogger(conf.LogLevel, logger.ServiceLogger)
 
+	zbx := zabbix.NewClient(conf.ZabbixConfig, lgr)
+	go zbx.Publish(context.TODO())
+
+	// prometheus RED
+	mon, _ := prometheus.NewPrometheusSink()
+	metrics.NewGlobal(metrics.DefaultConfig("sn_server"), mon)
+
 	// consul part
 	consulClient, err := consul.NewClient(conf)
 	if err != nil {
@@ -51,12 +61,12 @@ func main() {
 		lgr.Debug("service auth deregister in consul")
 	}()
 
-	db, err := mysql.OpenConn(conf, lgr)
+	db, err := mysql.OpenConn(conf.DBConfig, lgr)
 	if err != nil {
 		lgr.Fatal(err)
 	}
-	queue := rabbitmq.New(conf, lgr)
-	cache := redis.New(conf.CacheNodes, conf.CacheClustered, conf.CachePass, lgr)
+	queue := rabbitmq.New(conf.QueueConfig, lgr)
+	cache := redis.New(conf.CacheConfig.Nodes, conf.CacheConfig.Clustered, conf.CacheConfig.Pass, lgr)
 	stor := storage.New(db, queue, cache)
 
 	// "append" queue processing
